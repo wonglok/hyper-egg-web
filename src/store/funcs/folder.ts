@@ -1,7 +1,7 @@
 import localforage from "localforage";
 import { listDir } from "../fs";
 import { setRootDir } from "./shared";
-import type { ChatState, Message } from "@/types/chat";
+import type { ChatStateValues, Message } from "@/types/chat";
 
 async function verifyFolder(
   dir: FileSystemDirectoryHandle,
@@ -37,8 +37,8 @@ function systemMsg(name: string): Message {
 }
 
 export function restoreFolder(
-  set: (s: Partial<ChatState>) => void,
-  get: () => ChatState,
+  set: (s: Partial<ChatStateValues>) => void,
+  get: () => ChatStateValues,
 ) {
   return async () => {
     try {
@@ -83,8 +83,8 @@ export function restoreFolder(
 }
 
 export function pickFolder(
-  set: (s: Partial<ChatState>) => void,
-  get: () => ChatState,
+  set: (s: Partial<ChatStateValues>) => void,
+  get: () => ChatStateValues,
 ) {
   return async () => {
     try {

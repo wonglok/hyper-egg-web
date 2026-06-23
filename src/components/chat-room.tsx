@@ -1,19 +1,24 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
-import { useChat } from "@/store/chat";
+import { useChat } from "@/store/useChat";
+import { useChatAction } from "@/store/useChatAction";
 
 export function ChatRoom() {
   const messages = useChat((s) => s.messages);
   const input = useChat((s) => s.input);
   const loading = useChat((s) => s.loading);
-  const setInput = useChat((s) => s.setInput);
-  const send = useChat((s) => s.send);
-  const stop = useChat((s) => s.stop);
+  const { setInput, send, stop } = useChatAction();
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
-    <>
+    <div className="flex flex-col min-h-0 flex-1">
       <div className="flex-1 overflow-y-auto py-6 space-y-4">
         {messages.length === 0 && (
           <p className="text-zinc-500 dark:text-zinc-400 text-center mt-12">
@@ -66,6 +71,7 @@ export function ChatRoom() {
             </div>
           );
         })}
+        <div ref={bottomRef} />
       </div>
 
       <form
@@ -101,6 +107,6 @@ export function ChatRoom() {
           </button>
         )}
       </form>
-    </>
+    </div>
   );
 }

@@ -1,11 +1,11 @@
 import { resolvePath } from "../fs";
 import { TOOLS, dispatchTool } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
-import type { ChatState, Message } from "@/types/chat";
+import type { ChatStateValues, Message } from "@/types/chat";
 
 export function send(
-  set: (s: Partial<ChatState>) => void,
-  get: () => ChatState,
+  set: (s: Partial<ChatStateValues>) => void,
+  get: () => ChatStateValues,
 ) {
   return async () => {
     const { input, messages, loading, model } = get();
@@ -107,7 +107,7 @@ export function send(
   };
 }
 
-export function stop(set: (s: Partial<ChatState>) => void) {
+export function stop(set: (s: Partial<ChatStateValues>) => void) {
   return () => {
     abort?.abort();
     set({ loading: false });

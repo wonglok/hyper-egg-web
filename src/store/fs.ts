@@ -1,18 +1,6 @@
-import init, { LiteParse } from "@llamaindex/liteparse-wasm";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
-let parser: LiteParse | null = null;
-let wasmReady = false;
-
-async function getParser(): Promise<LiteParse> {
-  if (!wasmReady) {
-    await init();
-    wasmReady = true;
-  }
-  if (!parser) {
-    parser = new LiteParse({ ocrEnabled: false, outputFormat: "markdown", imageMode: "embed" });
-  }
-  return parser;
-}
+GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.0.227/pdf.worker.min.mjs`;
 
 export type TreeNode = {
   name: string;
@@ -94,10 +82,20 @@ export async function readFileContent(
 
   if (isPDF(file)) {
     try {
-      const parser = await getParser();
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const result = await parser.parse(bytes);
-      return result.text || "(PDF parsed but no text extracted)";
+      const doc = await getDocument({ data: bytes }).promise;
+      const texts: string[] = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        texts.push(
+          content.items
+            .filter((item) => "str" in item)
+            .map((item) => (item as { str: string }).str)
+            .join(" "),
+        );
+      }
+      return texts.join("\n\n") || "(PDF parsed but no text extracted)";
     } catch (e) {
       return `Error parsing PDF: ${(e as Error).message}`;
     }

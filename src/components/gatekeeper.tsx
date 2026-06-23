@@ -1,6 +1,7 @@
 "use client";
 
-import { useChat } from "@/store/chat";
+import { useChat } from "@/store/useChat";
+import { useChatAction } from "@/store/useChatAction";
 import type { GateStatus } from "@/types/chat";
 import { AlertIcon, FolderIcon, SpinnerIcon } from "./icons";
 
@@ -26,10 +27,10 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
   const folderTree = useChat((s) => s.folderTree);
   const gateStatus = useChat((s) => s.gateStatus);
   const gateError = useChat((s) => s.gateError);
-  const pickFolder = useChat((s) => s.pickFolder);
+  const { pickFolder } = useChatAction();
 
   return (
-    <>
+    <div className="flex flex-col min-h-0 flex-1">
       <div className="flex items-center gap-2 py-2 text-xs">
         <button
           type="button"
@@ -90,6 +91,6 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

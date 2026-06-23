@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useChat } from "@/store/chat";
+import { useChat } from "@/store/useChat";
+import { useChatAction } from "@/store/useChatAction";
 import type { Provider } from "@/types/chat";
 
 export function ProviderSelector() {
   const provider = useChat((s) => s.provider);
-  const setProvider = useChat((s) => s.setProvider);
   const key = useChat((s) => s.openrouterKey);
-  const setKey = useChat((s) => s.setOpenrouterKey);
-  const fetchModels = useChat((s) => s.fetchModels);
+  const {
+    setProvider,
+    setOpenrouterKey: setKey,
+    fetchModels,
+  } = useChatAction();
   const [showKey, setShowKey] = useState(false);
   const [draft, setDraft] = useState(key);
 

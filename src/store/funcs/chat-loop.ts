@@ -3,6 +3,28 @@ import { TOOLS, dispatchTool } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 
+type DeltaToolCall = {
+  index: number;
+  id?: string;
+  type?: "function";
+  function?: { name?: string; arguments?: string };
+};
+
+function mergeToolCalls(acc: Map<number, DeltaToolCall>, deltas: DeltaToolCall[]) {
+  for (const d of deltas) {
+    const existing = acc.get(d.index) ?? { index: d.index };
+    if (d.id) existing.id = d.id;
+    if (d.type) existing.type = d.type;
+    if (d.function) {
+      existing.function = {
+        name: (existing.function?.name ?? "") + (d.function.name ?? ""),
+        arguments: (existing.function?.arguments ?? "") + (d.function.arguments ?? ""),
+      };
+    }
+    acc.set(d.index, existing);
+  }
+}
+
 export function send(
   set: (s: Partial<ChatStateValues>) => void,
   get: () => ChatStateValues,
@@ -28,9 +50,10 @@ export function send(
 
     try {
       while (true) {
-        const res = await client.chat.completions.create(
+        const stream = await client.chat.completions.create(
           {
             model,
+            stream: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             messages: conversation as any,
             tools: TOOLS,
@@ -39,13 +62,59 @@ export function send(
           { signal: controller.signal },
         );
 
-        const choice = res.choices[0];
-        const toolCalls = choice.message.tool_calls as Message["tool_calls"];
+        const accumulatedTools = new Map<number, DeltaToolCall>();
+        let finished = false;
 
-        if (toolCalls?.length) {
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta;
+          if (!delta) continue;
+
+          // reasoning / thinking content
+          const reasoning = (delta as Record<string, string>).reasoning_content;
+          if (reasoning) {
+            assistant.reasoning = (assistant.reasoning ?? "") + reasoning;
+            set({ messages: [...conversation, { ...assistant }] });
+          }
+
+          // regular content
+          if (delta.content) {
+            assistant.content += delta.content;
+            set({ messages: [...conversation, { ...assistant }] });
+          }
+
+          // tool calls
+          const toolDeltas = delta.tool_calls as DeltaToolCall[] | undefined;
+          if (toolDeltas) {
+            mergeToolCalls(accumulatedTools, toolDeltas);
+          }
+
+          // check for finish
+          const finishReason = chunk.choices[0]?.finish_reason;
+          if (finishReason) {
+            finished = true;
+          }
+        }
+
+        if (accumulatedTools.size > 0) {
+          // build completed tool calls
+          const toolCalls: Message["tool_calls"] = [];
+          for (const [, tc] of accumulatedTools) {
+            if (tc.id && tc.function?.name) {
+              toolCalls.push({
+                id: tc.id,
+                type: "function" as const,
+                function: {
+                  name: tc.function.name,
+                  arguments: tc.function.arguments ?? "{}",
+                },
+              });
+            }
+          }
+
           conversation.push({
             role: "assistant",
-            content: "",
+            content: assistant.content,
+            reasoning: assistant.reasoning,
             tool_calls: toolCalls,
           });
 
@@ -54,6 +123,7 @@ export function send(
 
             if (tc.function.name === "describe_image") {
               assistant.content = "";
+              assistant.reasoning = undefined;
               try {
                 const imgPath = String(args.path ?? ".");
                 const imgHandle = await resolvePath(rootDir!, imgPath);
@@ -88,10 +158,17 @@ export function send(
           }
 
           assistant.content = assistant.content || "Browsing folder…";
+          assistant.reasoning = undefined;
+          assistant.imageUrl = undefined;
           set({ messages: [...conversation, { ...assistant }] });
         } else {
-          assistant.content = choice.message.content ?? "";
-          set({ messages: [...conversation, assistant] });
+          // final text response — already streamed
+          conversation.push({
+            role: "assistant",
+            content: assistant.content,
+            reasoning: assistant.reasoning,
+          });
+          set({ messages: [...conversation, { ...assistant }] });
           break;
         }
       }

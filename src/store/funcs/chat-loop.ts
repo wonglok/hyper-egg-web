@@ -137,8 +137,9 @@ export function send(
                 tc.function.name,
                 args,
                 rootDir!,
-                (delta) => {
-                  assistant.content += delta;
+                (content, reasoning) => {
+                  if (content) assistant.content += content;
+                  if (reasoning) assistant.reasoning = (assistant.reasoning ?? "") + reasoning;
                   set({ messages: [...conversation, { ...assistant }] });
                 },
               );

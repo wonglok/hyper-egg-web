@@ -41,7 +41,10 @@ export async function describeImage(
       {
         role: "user",
         content: [
-          { type: "text" as const, text: "Describe this image in detail. Include any text visible in the image, the layout, colors, objects, and overall impression." },
+          {
+            type: "text" as const,
+            text: "Describe this image in detail. Include any text visible in the image, the layout, colors, objects, and overall impression.",
+          },
           { type: "image_url" as const, image_url: { url: dataUrl } },
         ],
       },
@@ -67,7 +70,8 @@ export const definition = {
   type: "function" as const,
   function: {
     name: "describe_image",
-    description: "Analyze and describe an image file using a vision model. Supports PNG, JPEG, GIF, WebP, SVG, and BMP.",
+    description:
+      "Analyze and describe an image file using a vision model. Supports PNG, JPEG, GIF, WebP, SVG, and BMP.",
     parameters: {
       type: "object" as const,
       properties: {

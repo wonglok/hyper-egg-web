@@ -7,7 +7,11 @@ type OnChunk = (content: string, reasoning?: string) => void;
 
 type ToolModule = {
   definition: typeof listDir.definition;
-  handler: (args: Record<string, unknown>, rootDir: FileSystemDirectoryHandle, onChunk?: OnChunk) => Promise<string>;
+  handler: (
+    args: Record<string, unknown>,
+    rootDir: FileSystemDirectoryHandle,
+    onChunk?: OnChunk,
+  ) => Promise<string>;
 };
 
 const modules: Record<string, ToolModule> = {

@@ -24,3 +24,42 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.streamdown-wrapper {
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.streamdown-wrapper p {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.streamdown-wrapper p:first-child {
+  margin-top: 0;
+}
+
+.streamdown-wrapper p:last-child {
+  margin-bottom: 0;
+}
+
+.streamdown-wrapper pre {
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.streamdown-wrapper code {
+  font-size: 0.8em;
+}
+
+.streamdown-wrapper ul,
+.streamdown-wrapper ol {
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.streamdown-wrapper a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

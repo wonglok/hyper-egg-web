@@ -1,6 +1,14 @@
-import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+let pdfjsReady = false;
 
-GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.0.227/pdf.worker.min.mjs`;
+async function initPdfjs() {
+  if (pdfjsReady) return;
+  const { GlobalWorkerOptions } = await import("pdfjs-dist");
+  GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.mjs",
+    import.meta.url,
+  ).toString();
+  pdfjsReady = true;
+}
 
 export type TreeNode = {
   name: string;
@@ -82,6 +90,8 @@ export async function readFileContent(
 
   if (isPDF(file)) {
     try {
+      await initPdfjs();
+      const { getDocument } = await import("pdfjs-dist");
       const bytes = new Uint8Array(await file.arrayBuffer());
       const doc = await getDocument({ data: bytes }).promise;
       const texts: string[] = [];

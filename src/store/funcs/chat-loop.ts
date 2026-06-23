@@ -59,8 +59,12 @@ export function send(
 
     const client = getClient();
 
+    let loopCount = 0;
+    const MAX_LOOPS = 30;
+
     try {
-      while (true) {
+      while (loopCount < MAX_LOOPS) {
+        loopCount++;
         const stream = await client.chat.completions.create(
           {
             model,
@@ -203,6 +207,18 @@ export function send(
 
           break;
         }
+      }
+
+      // safety — force break if max iterations reached
+      if (
+        loopCount >= MAX_LOOPS &&
+        !conversation[conversation.length - 1]?.content
+      ) {
+        conversation.push({
+          role: "assistant",
+          content: "(reached max steps — please refine your request)",
+        });
+        set({ messages: [...conversation] });
       }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {

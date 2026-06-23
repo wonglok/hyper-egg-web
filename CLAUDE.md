@@ -2,4 +2,4 @@
 
 you must use zustand for react state management
 
-always separate state and function to dfferent zustand stores.
+you must always separate ui state in zustand and function in zustand to dfferent store files.

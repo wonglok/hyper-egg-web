@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { resolvePath } from "@/store/fs";
 import { rootDir } from "@/store/funcs/shared";
 import { useChat } from "@/store/useChat";
+import { useChatAction } from "@/store/useChatAction";
 import { ChevronRightIcon, FileIcon, FolderIcon } from "./icons";
 
 type Entry = { name: string; kind: "file" | "directory" };
@@ -121,6 +122,26 @@ function DirRow({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function PathToolbar({ path }: { path: string }) {
+  const { setInput } = useChatAction();
+
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 border-b border-zinc-200 dark:border-zinc-800 text-xs">
+      <span className="flex-1 truncate font-mono text-zinc-500 dark:text-zinc-400">
+        {path}
+      </span>
+      <button
+        type="button"
+        onClick={() => setInput(path)}
+        className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
+        title="Copy path to prompt"
+      >
+        Ask AI
+      </button>
     </div>
   );
 }
@@ -268,14 +289,19 @@ export function FileBrowser() {
           </div>
 
           {/* preview */}
-          <div className="flex-1 overflow-hidden">
-            {selectedKind === "file" && selectedPath ? (
-              <Preview path={selectedPath} />
-            ) : (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 p-4 text-center">
-                Select a file to preview
-              </p>
+          <div className="flex-1 flex flex-col min-h-0">
+            {selectedKind === "file" && selectedPath && (
+              <PathToolbar path={selectedPath} />
             )}
+            <div className="flex-1 overflow-hidden">
+              {selectedKind === "file" && selectedPath ? (
+                <Preview path={selectedPath} />
+              ) : (
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 p-4 text-center">
+                  Select a file to preview
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import * as listDir from "./list-directory";
 import * as readFile from "./read-file";
 import * as describeImage from "./describe-image";
 import * as writeFile from "./write-file";
+import * as previewImage from "./preview-image";
 
 type OnChunk = (content: string, reasoning?: string) => void;
 
@@ -19,6 +20,7 @@ const modules: Record<string, ToolModule> = {
   read_file: readFile,
   describe_image: describeImage,
   write_file: writeFile,
+  preview_image: previewImage,
 };
 
 export const TOOLS = Object.values(modules).map((m) => m.definition);
@@ -38,4 +40,5 @@ export async function dispatchTool(
   }
 }
 
-export { describeImage };
+export { describeImage, previewImage };
+export { consumePreviewUrl } from "./preview-image";

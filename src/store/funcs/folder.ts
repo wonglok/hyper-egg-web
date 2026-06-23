@@ -32,7 +32,7 @@ async function verifyFolder(
 function systemMsg(name: string): Message {
   return {
     role: "system",
-    content: `Folder "${name}" is ready. Always call list_directory('.') first to see what's inside, then read files as needed. For images (PNG, JPEG, GIF, etc.), use describe_image instead of read_file. If the user asks a general question without specifying a file, explore the folder yourself to find relevant files.
+    content: `Folder "${name}" is ready. Always call list_directory('.') first to see what's inside, then read files as needed. For images (PNG, JPEG, GIF, etc.), use describe_image to analyze or preview_image to simply display them. If the user asks a general question without specifying a file, explore the folder yourself to find relevant files.
 
 請用繁體中文，廣東話版本 + emoji 回復我。`,
   };

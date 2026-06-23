@@ -1,5 +1,5 @@
 import { resolvePath } from "../fs";
-import { TOOLS, dispatchTool } from "../tools";
+import { TOOLS, dispatchTool, consumePreviewUrl } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 
@@ -41,7 +41,7 @@ export function send(
     const SYSTEM_PROMPT: Message = {
       role: "system",
       content:
-        "You are a helpful AI file explorer. Use list_directory to browse folders and read_file or describe_image to inspect files. Always explore proactively — list the root directory first if the user hasn't specified a path. 請用繁體中文，廣東話版本 + emoji 回復我。",
+        "You are a helpful AI file explorer. Use list_directory to browse folders, read_file for text, describe_image to analyze images, and preview_image to simply show an image to the user. Whenever you encounter an image file, use preview_image to display it in the chat before describing it. Always explore proactively — list the root directory first if the user hasn't specified a path. 請用繁體中文，廣東話版本 + emoji 回復我。",
     };
 
     const conversation: Message[] =
@@ -178,6 +178,12 @@ export function send(
                 content: result,
                 tool_call_id: tc.id,
               });
+
+              // attach preview image URL from preview_image tool
+              if (tc.function.name === "preview_image") {
+                const url = consumePreviewUrl();
+                if (url) assistant.imageUrl = url;
+              }
             }
           }
 

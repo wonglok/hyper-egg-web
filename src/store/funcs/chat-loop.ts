@@ -163,13 +163,13 @@ export function send(
           assistant.imageUrl = undefined;
           set({ messages: [...conversation, { ...assistant }] });
         } else {
-          // final text response — already streamed
+          // final text response — already streamed, just sync conversation
           conversation.push({
             role: "assistant",
             content: assistant.content,
             reasoning: assistant.reasoning,
           });
-          set({ messages: [...conversation, { ...assistant }] });
+          set({ messages: [...conversation] });
           break;
         }
       }

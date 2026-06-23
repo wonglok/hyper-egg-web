@@ -2,6 +2,7 @@
 
 import { useChat } from "@/store/chat";
 import type { GateStatus } from "@/types/chat";
+import { AlertIcon, FolderIcon, SpinnerIcon } from "./icons";
 
 const labels: Record<GateStatus, string> = {
   idle: "No folder selected",
@@ -30,6 +31,34 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="flex items-center gap-2 py-2 text-xs">
+        <button
+          type="button"
+          onClick={pickFolder}
+          className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-medium transition-colors ${
+            gateStatus === "verifying"
+              ? "border-blue-300 dark:border-blue-700 cursor-wait"
+              : gateStatus === "error"
+                ? "border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                : "border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+          }`}
+          disabled={gateStatus === "verifying"}
+        >
+          {gateStatus === "verifying" ? (
+            <SpinnerIcon className="size-3 animate-spin" />
+          ) : gateStatus === "error" ? (
+            <AlertIcon className="size-3" />
+          ) : (
+            <FolderIcon className="size-3" />
+          )}
+          {folderTree ? folderTree.name : "Select folder"}
+        </button>
+
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${badge[gateStatus]}`}
+        >
+          {labels[gateStatus]}
+        </span>
+
         {gateStatus === "error" && gateError && (
           <span className="truncate text-red-600 dark:text-red-400">
             {gateError}

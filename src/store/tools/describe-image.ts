@@ -24,7 +24,7 @@ export function getImageMimeType(name: string): string {
 
 export async function describeImage(
   handle: FileSystemFileHandle,
-  onChunk?: (text: string) => void,
+  onChunk?: (content: string, reasoning?: string) => void,
 ): Promise<string> {
   const file = await handle.getFile();
   const buffer = await file.arrayBuffer();
@@ -50,10 +50,13 @@ export async function describeImage(
 
   let result = "";
   for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content;
-    if (content) {
-      result += content;
-      onChunk?.(content);
+    const delta = chunk.choices[0]?.delta;
+    if (!delta) continue;
+    const content = delta.content;
+    const reasoning = (delta as Record<string, string>).reasoning_content;
+    if (content || reasoning) {
+      if (content) result += content;
+      onChunk?.(content ?? "", reasoning);
     }
   }
 
@@ -81,7 +84,7 @@ export const definition = {
 export async function handler(
   args: Record<string, unknown>,
   rootDir: FileSystemDirectoryHandle,
-  onChunk?: (text: string) => void,
+  onChunk?: (content: string, reasoning?: string) => void,
 ): Promise<string> {
   const path = String(args.path ?? ".");
   const handle = await resolvePath(rootDir, path);

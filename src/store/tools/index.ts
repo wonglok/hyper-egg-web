@@ -3,9 +3,11 @@ import * as readFile from "./read-file";
 import * as describeImage from "./describe-image";
 import * as writeFile from "./write-file";
 
+type OnChunk = (content: string, reasoning?: string) => void;
+
 type ToolModule = {
   definition: typeof listDir.definition;
-  handler: (args: Record<string, unknown>, rootDir: FileSystemDirectoryHandle, onChunk?: (text: string) => void) => Promise<string>;
+  handler: (args: Record<string, unknown>, rootDir: FileSystemDirectoryHandle, onChunk?: OnChunk) => Promise<string>;
 };
 
 const modules: Record<string, ToolModule> = {
@@ -21,7 +23,7 @@ export async function dispatchTool(
   name: string,
   args: Record<string, unknown>,
   rootDir: FileSystemDirectoryHandle,
-  onChunk?: (text: string) => void,
+  onChunk?: OnChunk,
 ): Promise<string> {
   const mod = modules[name];
   if (!mod) return "Error: unknown tool.";

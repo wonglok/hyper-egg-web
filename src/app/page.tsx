@@ -1,23 +1,34 @@
 "use client";
 
 import { useEffect } from "react";
+import localforage from "localforage";
 import { ChatRoom } from "@/components/chat-room";
 import { Gatekeeper } from "@/components/gatekeeper";
 import { FolderIcon, RefreshIcon } from "@/components/icons";
+import { ProviderSelector } from "@/components/openrouter-key";
 import { useChat } from "@/store/chat";
 
 export default function Home() {
   const models = useChat((s) => s.models);
   const model = useChat((s) => s.model);
   const setModel = useChat((s) => s.setModel);
+  const setProvider = useChat((s) => s.setProvider);
+  const setOpenrouterKey = useChat((s) => s.setOpenrouterKey);
   const fetchModels = useChat((s) => s.fetchModels);
   const pickFolder = useChat((s) => s.pickFolder);
   const restoreFolder = useChat((s) => s.restoreFolder);
 
   useEffect(() => {
+    // restore provider + key from localforage
+    localforage.getItem<string>("openrouterKey").then((k) => {
+      if (k) setOpenrouterKey(k);
+    });
+    localforage.getItem<string>("provider").then((p) => {
+      if (p === "openrouter" || p === "lmstudio") setProvider(p);
+    });
     fetchModels();
     restoreFolder();
-  }, [fetchModels, restoreFolder]);
+  }, [fetchModels, restoreFolder, setOpenrouterKey, setProvider]);
 
   return (
     <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full px-4">
@@ -54,6 +65,7 @@ export default function Home() {
           >
             <RefreshIcon className="size-3" />
           </button>
+          <ProviderSelector />
         </div>
 
         <ChatRoom />

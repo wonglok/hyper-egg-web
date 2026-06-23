@@ -16,6 +16,8 @@ export type Message = {
 
 export type GateStatus = "idle" | "verifying" | "ready" | "readonly" | "error";
 
+export type Provider = "lmstudio" | "openrouter";
+
 export type ChatState = {
   messages: Message[];
   input: string;
@@ -25,8 +27,12 @@ export type ChatState = {
   gateError: string;
   models: Model[];
   model: string;
+  provider: Provider;
+  openrouterKey: string;
   setInput: (v: string) => void;
   setModel: (m: string) => void;
+  setProvider: (p: Provider) => void;
+  setOpenrouterKey: (key: string) => void;
   fetchModels: () => Promise<void>;
   restoreFolder: () => Promise<void>;
   pickFolder: () => Promise<void>;

@@ -1,6 +1,6 @@
 import { resolvePath } from "../fs";
 import { TOOLS, dispatchTool } from "../tools";
-import { openai, abort, rootDir, setAbort } from "./shared";
+import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatState, Message } from "@/types/chat";
 
 export function send(
@@ -24,9 +24,11 @@ export function send(
     const controller = new AbortController();
     setAbort(controller);
 
+    const client = getClient();
+
     try {
       while (true) {
-        const res = await openai.chat.completions.create(
+        const res = await client.chat.completions.create(
           {
             model,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

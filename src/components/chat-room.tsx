@@ -47,7 +47,14 @@ export function ChatRoom() {
           // assistant message — render with Streamdown
           return (
             <div key={i} className="flex justify-start">
-              <div className="max-w-[85%] rounded-2xl px-4 py-2.5 streamdown-wrapper bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+              <div className="max-w-[85%] rounded-2xl px-4 py-2.5 streamdown-wrapper bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 space-y-2">
+                {m.imageUrl && (
+                  <img
+                    src={m.imageUrl}
+                    alt="Preview"
+                    className="rounded-lg max-h-64 w-full object-contain bg-zinc-200 dark:bg-zinc-700"
+                  />
+                )}
                 {m.content ? (
                   <Streamdown mode={isStreaming ? "streaming" : "static"}>
                     {m.content}

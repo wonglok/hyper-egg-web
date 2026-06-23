@@ -5,6 +5,7 @@ export type Model = { id: string; object: string };
 export type Message = {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
+  imageUrl?: string;
   tool_call_id?: string;
   tool_calls?: {
     id: string;

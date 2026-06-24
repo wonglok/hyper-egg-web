@@ -257,28 +257,22 @@ Current directory structure:\n${treeListing}\n\n
             },
           });
 
-          // persist the evaluation as an assistant message with reasoning intact
-          assistant.content = goal.reached
-            ? goal.summary || "Done."
-            : `Progress so far:\n${goal.summary}`;
-          conversation.push({
-            role: "assistant",
-            content: assistant.content,
-            reasoning: assistant.reasoning,
-          });
-          set({ messages: [...conversation] });
+          if (goal.reached) {
+            break;
+          }
 
-          if (goal.reached) break;
+          // // persist the evaluation as an assistant message with reasoning intact
+          // assistant.content = goal.reached
+          //   ? goal.summary || "Done."
+          //   : `Progress so far:\n${goal.summary} Information for next step:\n${goal.suggestion}`;
+          // conversation.push({
+          //   role: "assistant",
+          //   content: assistant.content,
+          //   reasoning: assistant.reasoning,
+          // });
+          // set({ messages: [...conversation] });
 
-          conversation.push({
-            role: "assistant",
-            content: [
-              {
-                type: "text",
-                text: `Information for next step:\n${goal.suggestion}`,
-              },
-            ],
-          });
+          // if (goal.reached) break;
         }
       }
 

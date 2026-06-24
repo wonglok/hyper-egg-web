@@ -83,7 +83,106 @@ Current directory structure:\n${treeListing}\n\n
     const MAX_LOOPS = 30;
 
     try {
-      while (loopCount < MAX_LOOPS) {
+      // Quick goal check before entering the exploration loop.
+      // If the request is trivial (e.g. "hi"), respond directly without
+      // tool-based exploration so the chat doesn't get stuck looping.
+      {
+        const quickCheck = await checkGoalIsReached({
+          messages: conversation,
+          model,
+          onChunk: (text) => {
+            assistant.reasoning = (assistant.reasoning ?? "") + text;
+            set({ messages: [...conversation, { ...assistant }] });
+          },
+        });
+        assistant.reasoning = undefined;
+
+        if (quickCheck.reached) {
+          // Single-turn response — stream the reply & handle any tools once
+          const stream = await client.chat.completions.create(
+            {
+              model,
+              stream: true,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              messages: conversation as any,
+              tools: TOOLS,
+              tool_choice: "auto",
+            },
+            { signal: controller.signal },
+          );
+
+          const quickTools = new Map<number, DeltaToolCall>();
+
+          for await (const chunk of stream) {
+            const delta = chunk.choices[0]?.delta;
+            if (!delta) continue;
+
+            if (delta.content) {
+              assistant.content += delta.content;
+              set({ messages: [...conversation, { ...assistant }] });
+            }
+
+            const toolDeltas = delta.tool_calls as
+              | DeltaToolCall[]
+              | undefined;
+            if (toolDeltas) mergeToolCalls(quickTools, toolDeltas);
+          }
+
+          // Build tool calls
+          const qToolCalls: Message["tool_calls"] = [];
+          for (const [, tc] of quickTools) {
+            if (tc.id && tc.function?.name) {
+              qToolCalls.push({
+                id: tc.id,
+                type: "function" as const,
+                function: {
+                  name: tc.function.name,
+                  arguments: tc.function.arguments ?? "{}",
+                },
+              });
+            }
+          }
+
+          if (qToolCalls.length > 0) {
+            conversation.push({
+              role: "assistant",
+              content: assistant.content,
+              tool_calls: qToolCalls,
+            });
+
+            for (const tc of qToolCalls) {
+              let args: Record<string, unknown> = {};
+              try {
+                args = JSON.parse(tc.function.arguments);
+              } catch {
+                /* use empty args */
+              }
+
+              const result = await dispatchTool(
+                tc.function.name,
+                args,
+                rootDir!,
+              );
+              conversation.push({
+                role: "tool",
+                content: result,
+                tool_call_id: tc.id,
+              });
+            }
+          } else if (assistant.content) {
+            conversation.push({
+              role: "assistant",
+              content: assistant.content,
+            });
+          }
+
+          set({ messages: [...conversation] });
+        }
+      }
+
+      // Full exploration loop — only entered when goal is not trivially met
+      if (!conversation.some((m) => m.role === "assistant" && m.content)) {
+        while (loopCount < MAX_LOOPS) {
         loopCount++;
 
         // Reset per-iteration state so content doesn't bleed across turns
@@ -252,6 +351,7 @@ Current directory structure:\n${treeListing}\n\n
             });
             set({ messages: [...conversation] });
           }
+        }
         }
       }
 

@@ -86,7 +86,7 @@ You love emoji.
         const stream = await client.chat.completions.create(
           {
             model,
-            reasoning_effort: "xhigh",
+            reasoning_effort: "high",
             stream: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             messages: conversation as any,

@@ -77,8 +77,7 @@ export function ChatRoom() {
 
           // assistant message — render with Streamdown
           const assistantImgs = contentImages(m.content);
-          const hasAssistantImgs =
-            m.imageUrl || contentHasImage(m.content);
+          const hasAssistantImgs = m.imageUrl || contentHasImage(m.content);
           return (
             <div key={i} className="flex justify-start">
               <div className="max-w-[85%] rounded-2xl px-4 py-2.5 streamdown-wrapper bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 space-y-2">
@@ -122,6 +121,32 @@ export function ChatRoom() {
             </div>
           );
         })}
+
+        {loading && (
+          <div className="max-w-[85%] inline-block rounded-2xl px-4 py-2.5 bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+            <style>{`
+              @keyframes dot-bounce {
+                0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+                40% { transform: scale(1); opacity: 1; }
+              }
+              .dot-loader span {
+                display: inline-block;
+                width: 6px; height: 6px;
+                border-radius: 50%;
+                background-color: currentColor;
+                animation: dot-bounce 1.2s infinite ease-in-out both;
+              }
+            `}</style>
+            <span className="dot-loader text-zinc-400 dark:text-zinc-500">
+              <span style={{ animationDelay: "0s" }} />
+              {" "}
+              <span style={{ animationDelay: "0.2s" }} />
+              {" "}
+              <span style={{ animationDelay: "0.4s" }} />
+            </span>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 

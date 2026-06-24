@@ -199,11 +199,13 @@ Current directory structure:\n\n${treeListing}\n\n
         // --- Goal evaluation after inner loop exits ---
         if (innerExitedCleanly) {
           let reached = true;
+          let suggestion = "";
 
           try {
-            const checkStream = await client.chat.completions.create({
+            // Stream the evaluation so the UI shows progress
+            const evalStream = await client.chat.completions.create({
               model,
-              stream: false,
+              stream: true,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               messages: [
                 ...(conversation as any[]),
@@ -219,7 +221,38 @@ Current directory structure:\n\n${treeListing}\n\n
               ],
             });
 
-            const evalText = checkStream.choices[0]?.message?.content || "";
+            // Animated three-dot SVG for the goal-check placeholder
+            const dotsSvg = [
+              '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="16" viewBox="0 0 44 16">',
+              '<circle cx="6" cy="8" r="5" fill="#999">',
+              '<animate attributeName="opacity" values="1;0.15;1" dur="1.2s" repeatCount="indefinite" begin="0s"/>',
+              "</circle>",
+              '<circle cx="22" cy="8" r="5" fill="#999">',
+              '<animate attributeName="opacity" values="1;0.15;1" dur="1.2s" repeatCount="indefinite" begin="0.4s"/>',
+              "</circle>",
+              '<circle cx="38" cy="8" r="5" fill="#999">',
+              '<animate attributeName="opacity" values="1;0.15;1" dur="1.2s" repeatCount="indefinite" begin="0.8s"/>',
+              "</circle>",
+              "</svg>",
+            ].join("");
+            const dotsDataUri = `data:image/svg+xml,${encodeURIComponent(dotsSvg)}`;
+
+            const evalMsg: Message = {
+              role: "assistant",
+              content: `![:loading](${dotsDataUri})`,
+              reasoning: "",
+            };
+            let evalText = "";
+
+            for await (const chunk of evalStream) {
+              const delta = chunk.choices[0]?.delta?.content;
+              if (delta) {
+                evalText += delta;
+                evalMsg.reasoning = evalText;
+                set({ messages: [...conversation, { ...evalMsg }] });
+              }
+            }
+
             try {
               const json = JSON.parse(
                 evalText.slice(
@@ -228,6 +261,8 @@ Current directory structure:\n\n${treeListing}\n\n
                 ),
               );
               reached = Boolean(json.reached);
+              suggestion =
+                typeof json.suggestion === "string" ? json.suggestion : "";
             } catch {
               reached = true; // parse failure — assume done
             }
@@ -238,13 +273,10 @@ Current directory structure:\n\n${treeListing}\n\n
           if (reached) break;
 
           // Goal not achieved — nudge the model and restart the inner loop
-          conversation.push({
-            role: "user",
-            content:
-              "You haven't fully completed the original task yet. " +
-              "Please continue exploring and working until everything is done. " +
-              "Don't stop until the user's goal is fully achieved.",
-          });
+          const nudge =
+            "keep going.\n" +
+            (suggestion ? `\n\nNext step: ${suggestion}` : "");
+          conversation.push({ role: "user", content: nudge });
           set({
             messages: [...conversation, { role: "assistant", content: "" }],
           });

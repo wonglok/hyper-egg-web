@@ -4,7 +4,7 @@ import { send, stop } from "./funcs/chat-loop";
 import { pickFolder, restoreFolder } from "./funcs/folder";
 import { fetchModels } from "./funcs/models";
 import {
-  setOpenrouterKey,
+  setOllamaEndpoint,
   setProvider as setSharedProvider,
 } from "./funcs/shared";
 import { useChat } from "./useChat";
@@ -14,7 +14,7 @@ type Actions = {
   setInput: (v: string) => void;
   setModel: (m: string) => void;
   setProvider: (p: Provider) => void;
-  setOpenrouterKey: (key: string) => void;
+  setOllamaEndpoint: (endpoint: string) => void;
   fetchModels: () => Promise<void>;
   restoreFolder: () => Promise<void>;
   pickFolder: () => Promise<void>;
@@ -32,13 +32,13 @@ export const useChatAction = create<Actions>(() => ({
     localforage.setItem("provider", p);
   },
 
-  setOpenrouterKey: (key) => {
-    setOpenrouterKey(key);
-    useChat.setState({ openrouterKey: key });
-    if (key) {
-      localforage.setItem("openrouterKey", key);
+  setOllamaEndpoint: (endpoint) => {
+    setOllamaEndpoint(endpoint);
+    useChat.setState({ ollamaEndpoint: endpoint });
+    if (endpoint) {
+      localforage.setItem("ollamaEndpoint", endpoint);
     } else {
-      localforage.removeItem("openrouterKey");
+      localforage.removeItem("ollamaEndpoint");
     }
   },
 

@@ -21,7 +21,7 @@ export type Message = {
 
 export type GateStatus = "idle" | "verifying" | "ready" | "readonly" | "error";
 
-export type Provider = "lmstudio" | "openrouter";
+export type Provider = "lmstudio" | "ollama";
 
 export type ChatStateValues = {
   messages: Message[];
@@ -33,14 +33,14 @@ export type ChatStateValues = {
   models: Model[];
   model: string;
   provider: Provider;
-  openrouterKey: string;
+  ollamaEndpoint: string;
 };
 
 export type ChatActions = {
   setInput: (v: string) => void;
   setModel: (m: string) => void;
   setProvider: (p: Provider) => void;
-  setOpenrouterKey: (key: string) => void;
+  setOllamaEndpoint: (endpoint: string) => void;
   fetchModels: () => Promise<void>;
   restoreFolder: () => Promise<void>;
   pickFolder: () => Promise<void>;

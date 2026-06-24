@@ -7,31 +7,21 @@ import type { Provider } from "@/types/chat";
 
 export function ProviderSelector() {
   const provider = useChat((s) => s.provider);
-  const key = useChat((s) => s.openrouterKey);
-  const {
-    setProvider,
-    setOpenrouterKey: setKey,
-    fetchModels,
-  } = useChatAction();
-  const [showKey, setShowKey] = useState(false);
-  const [draft, setDraft] = useState(key);
+  const endpoint = useChat((s) => s.ollamaEndpoint);
+  const { setProvider, setOllamaEndpoint, fetchModels } = useChatAction();
+  const [showEndpoint, setShowEndpoint] = useState(false);
+  const [draft, setDraft] = useState(endpoint);
 
   function switchProvider(p: Provider) {
     setProvider(p);
     setTimeout(() => fetchModels(), 100);
   }
 
-  function saveKey() {
+  function saveEndpoint() {
     const trimmed = draft.trim();
-    setKey(trimmed);
+    setOllamaEndpoint(trimmed);
     setDraft(trimmed);
-    setShowKey(false);
-    setTimeout(() => fetchModels(), 100);
-  }
-
-  function clearKey() {
-    setKey("");
-    setDraft("");
+    setShowEndpoint(false);
     setTimeout(() => fetchModels(), 100);
   }
 
@@ -52,37 +42,37 @@ export function ProviderSelector() {
         </button>
         <button
           type="button"
-          onClick={() => switchProvider("openrouter")}
+          onClick={() => switchProvider("ollama")}
           className={`px-2 py-1 font-medium transition-colors ${
-            provider === "openrouter"
+            provider === "ollama"
               ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
               : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
           }`}
         >
-          OpenRouter
+          Ollama
         </button>
       </div>
 
-      {/* key input (only for OpenRouter) */}
-      {provider === "openrouter" && (
+      {/* endpoint input (only for Ollama) */}
+      {provider === "ollama" && (
         <>
-          {showKey ? (
+          {showEndpoint ? (
             <>
               <input
-                type="password"
+                type="text"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="sk-or-v1-…"
-                className="w-28 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="http://localhost:11434/v1"
+                className="w-48 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-blue-400"
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") saveKey();
-                  if (e.key === "Escape") setShowKey(false);
+                  if (e.key === "Enter") saveEndpoint();
+                  if (e.key === "Escape") setShowEndpoint(false);
                 }}
               />
               <button
                 type="button"
-                onClick={saveKey}
+                onClick={saveEndpoint}
                 className="shrink-0 rounded-lg bg-zinc-900 px-2 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors"
               >
                 Save
@@ -92,25 +82,24 @@ export function ProviderSelector() {
             <button
               type="button"
               onClick={() => {
-                setDraft(key);
-                setShowKey(true);
+                setDraft(endpoint);
+                setShowEndpoint(true);
               }}
-              className={`shrink-0 rounded-lg border px-2 py-1 text-xs font-medium transition-colors ${
-                key
-                  ? "border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300"
-                  : "border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 animate-pulse"
-              }`}
-              title={key ? "Key set" : "API key required"}
+              className="shrink-0 rounded-lg border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+              title="Set Ollama endpoint"
             >
-              {key ? "Key set" : "Set key"}
+              {endpoint ? endpoint : "Set endpoint"}
             </button>
           )}
-          {key && !showKey && (
+          {endpoint && !showEndpoint && (
             <button
               type="button"
-              onClick={clearKey}
+              onClick={() => {
+                setOllamaEndpoint("");
+                setDraft("");
+              }}
               className="shrink-0 text-xs text-zinc-400 hover:text-red-500"
-              title="Remove key"
+              title="Reset endpoint"
             >
               ✕
             </button>

@@ -6,7 +6,7 @@ import { ChatRoom } from "@/components/chat-room";
 import { FileBrowser } from "@/components/file-browser";
 import { Gatekeeper } from "@/components/gatekeeper";
 import { FolderIcon, RefreshIcon } from "@/components/icons";
-import { ProviderSelector } from "@/components/openrouter-key";
+import { ProviderSelector } from "@/components/provider-selector";
 import { useChat } from "@/store/useChat";
 import { useChatAction } from "@/store/useChatAction";
 
@@ -17,23 +17,23 @@ export default function Home() {
   const {
     setModel,
     setProvider,
-    setOpenrouterKey,
+    setOllamaEndpoint,
     fetchModels,
     pickFolder,
     restoreFolder,
   } = useChatAction();
 
   useEffect(() => {
-    // restore provider + key from localforage
-    localforage.getItem<string>("openrouterKey").then((k) => {
-      if (k) setOpenrouterKey(k);
+    // restore provider + endpoint from localforage
+    localforage.getItem<string>("ollamaEndpoint").then((e) => {
+      if (e) setOllamaEndpoint(e);
     });
     localforage.getItem<string>("provider").then((p) => {
-      if (p === "openrouter" || p === "lmstudio") setProvider(p);
+      if (p === "ollama" || p === "lmstudio") setProvider(p);
     });
     fetchModels();
     restoreFolder();
-  }, [fetchModels, restoreFolder, setOpenrouterKey, setProvider]);
+  }, [fetchModels, restoreFolder, setOllamaEndpoint, setProvider]);
 
   return (
     <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full h-full px-4">
@@ -76,10 +76,21 @@ export default function Home() {
               </button>
             </>
           )}
-          {provider === "openrouter" && (
-            <span className="flex-1 text-xs text-zinc-400 dark:text-zinc-500 italic">
-              Model selected by OpenRouter
-            </span>
+          {provider === "ollama" && (
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500"
+            >
+              {models.length === 0 && (
+                <option value="">Loading models…</option>
+              )}
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.id}
+                </option>
+              ))}
+            </select>
           )}
           <ProviderSelector />
         </div>

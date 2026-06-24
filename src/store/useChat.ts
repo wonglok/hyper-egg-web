@@ -13,5 +13,5 @@ export const useChat = create<ChatStateValues>(() => ({
   models: [],
   model: "",
   provider: "lmstudio",
-  openrouterKey: "",
+  ollamaEndpoint: "",
 }));

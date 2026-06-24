@@ -153,7 +153,7 @@ When the user is looking for images, use read_image to look at each image and de
               /* use empty args */
             }
 
-            const result = await dispatchTool(
+            const rawResult = await dispatchTool(
               tc.function.name,
               args,
               rootDir!,
@@ -161,9 +161,38 @@ When the user is looking for images, use read_image to look at each image and de
               model,
             );
 
+            let toolContent = rawResult;
+
+            // read_image returns { dataUrl, description } — inject the
+            // image for display and use only the description as the tool result
+            if (tc.function.name === "read_image") {
+              try {
+                const parsed = JSON.parse(rawResult);
+                if (
+                  parsed.dataUrl &&
+                  parsed.dataUrl.startsWith("data:image/")
+                ) {
+                  conversation.push({
+                    role: "user",
+                    content: [
+                      { type: "text", text: "Here is the image." },
+                      { type: "image_url", image_url: { url: parsed.dataUrl } },
+                    ],
+                  });
+                  assistant.imageUrl = parsed.dataUrl;
+                }
+                toolContent =
+                  typeof parsed.description === "string"
+                    ? parsed.description
+                    : rawResult;
+              } catch {
+                // not JSON — use raw result as-is
+              }
+            }
+
             conversation.push({
               role: "tool",
-              content: result,
+              content: toolContent,
               tool_call_id: tc.id,
             });
           }

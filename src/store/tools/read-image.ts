@@ -58,22 +58,33 @@ export async function handler(
 ): Promise<string> {
   const path = String(args.path ?? ".");
   const handle = await resolvePath(rootDir, path);
-  if (handle.kind !== "file") return "Error: not a file.";
+  if (handle.kind !== "file")
+    return JSON.stringify({ dataUrl: "", description: "Error: not a file." });
 
   const file = await (handle as FileSystemFileHandle).getFile();
 
   if (!file.type.startsWith("image/")) {
-    return `Error: "${path}" is not an image file (type: ${file.type || "unknown"}).`;
+    return JSON.stringify({
+      dataUrl: "",
+      description: `Error: "${path}" is not an image file (type: ${file.type || "unknown"}).`,
+    });
   }
 
   let dataUrl: string;
   try {
     dataUrl = await resizeToDataUrl(file);
   } catch (e) {
-    return `Error reading image: ${(e as Error).message}`;
+    return JSON.stringify({
+      dataUrl: "",
+      description: `Error reading image: ${(e as Error).message}`,
+    });
   }
 
-  if (!model) return "Error: no model configured for vision.";
+  if (!model)
+    return JSON.stringify({
+      dataUrl,
+      description: "Error: no model configured for vision.",
+    });
 
   const client = getClient();
 
@@ -97,8 +108,16 @@ export async function handler(
       ],
     });
 
-    return response.choices[0]?.message?.content || "(no description)";
+    const description =
+      response.choices[0]?.message?.content || "(no description)";
+
+    // Return both the data URL and description so the chat loop can
+    // inject the image for display while using the description as the tool result
+    return JSON.stringify({ dataUrl, description });
   } catch (e) {
-    return `Error describing image: ${(e as Error).message}`;
+    return JSON.stringify({
+      dataUrl,
+      description: `Error describing image: ${(e as Error).message}`,
+    });
   }
 }

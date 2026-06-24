@@ -1,10 +1,5 @@
-import { resolvePath, formatTree } from "../fs";
-import {
-  TOOLS,
-  dispatchTool,
-  consumePreviewUrl,
-  getImageDataUrl,
-} from "../tools";
+import { formatTree } from "../fs";
+import { TOOLS, dispatchTool } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 
@@ -49,22 +44,17 @@ export function send(
       role: "system",
       content: `
 # Role
-If you help user find things, You MUST NOT stop until you go through all files and you can even use describe_image for understanding image.
 You help answer user queries as a helpful assistant.
 
 # Tools
 - list_directory — browse folder contents
 - read_file — read a text file
 - write_file — create or overwrite a file
-- describe_image — analyze an image with vision
-- preview_image — display an image in the chat (use BEFORE describe_image whenever you encounter an image file)
 
 Always explore proactively — list the root directory first if the user hasn't specified a path.
 
-You can see images via describe_image tool because it can convert the image to text.
-
 Try to help the user achieve their goal and don't stop until you have finished the goal.
-Or Try to fullfill the user query and don't stop until you have fullfilled the query.
+Or try to fulfill the user query and don't stop until you have fulfilled the query.
 ---
 Current directory structure:\n${treeListing}\n\n
 ---
@@ -127,7 +117,8 @@ Current directory structure:\n${treeListing}\n\n
             if (!delta) continue;
 
             // reasoning / thinking content
-            const reasoning = (delta as Record<string, string>).reasoning_content;
+            const reasoning = (delta as Record<string, string>)
+              .reasoning_content;
             if (reasoning) {
               assistant.reasoning = (assistant.reasoning ?? "") + reasoning;
               set({ messages: [...conversation, { ...assistant }] });
@@ -177,60 +168,16 @@ Current directory structure:\n${treeListing}\n\n
                 /* use empty args */
               }
 
-              if (tc.function.name === "describe_image") {
-                let dataUrl = "";
-                try {
-                  const imgPath = String(args.path ?? ".");
-                  const imgHandle = await resolvePath(rootDir!, imgPath);
-                  if (imgHandle.kind === "file") {
-                    dataUrl = await getImageDataUrl(imgHandle);
-                    assistant.imageUrl = dataUrl;
-                  }
-                } catch {
-                  /* preview not critical */
-                }
-
-                if (dataUrl) {
-                  conversation.push({
-                    role: "user",
-                    content: [
-                      {
-                        type: "text",
-                        text: "Here is the image. Please describe it in detail.",
-                      },
-                      {
-                        type: "image_url",
-                        image_url: { url: dataUrl },
-                      },
-                    ],
-                  });
-                }
-
-                conversation.push({
-                  role: "tool",
-                  content: dataUrl
-                    ? "Image loaded and shown to the model for direct vision."
-                    : "Failed to load image.",
-                  tool_call_id: tc.id,
-                });
-              } else {
-                const result = await dispatchTool(
-                  tc.function.name,
-                  args,
-                  rootDir!,
-                );
-                conversation.push({
-                  role: "tool",
-                  content: result,
-                  tool_call_id: tc.id,
-                });
-
-                // attach preview image URL from preview_image tool
-                if (tc.function.name === "preview_image") {
-                  const url = consumePreviewUrl();
-                  if (url) assistant.imageUrl = url;
-                }
-              }
+              const result = await dispatchTool(
+                tc.function.name,
+                args,
+                rootDir!,
+              );
+              conversation.push({
+                role: "tool",
+                content: result,
+                tool_call_id: tc.id,
+              });
             }
 
             set({ messages: [...conversation] });

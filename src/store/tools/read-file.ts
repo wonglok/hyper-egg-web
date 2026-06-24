@@ -4,7 +4,7 @@ export const definition = {
   type: "function" as const,
   function: {
     name: "read_file",
-    description: "Read the text contents of a file. For images, use describe_image instead.",
+    description: "Read the text contents of a file.",
     parameters: {
       type: "object" as const,
       properties: {

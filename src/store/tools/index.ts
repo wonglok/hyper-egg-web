@@ -1,8 +1,6 @@
 import * as listDir from "./list-directory";
 import * as readFile from "./read-file";
-import * as describeImage from "./describe-image";
 import * as writeFile from "./write-file";
-import * as previewImage from "./preview-image";
 import * as checkGoalReached from "./check-goal-reached";
 
 type OnChunk = (content: string, reasoning?: string) => void;
@@ -32,9 +30,7 @@ type ToolModule = {
 const modules: Record<string, ToolModule> = {
   list_directory: listDir,
   read_file: readFile,
-  describe_image: describeImage,
   write_file: writeFile,
-  preview_image: previewImage,
   checkGoalIsReached: checkGoalReached,
 };
 
@@ -54,7 +50,3 @@ export async function dispatchTool(
     return `Error: ${(e as Error).message}`;
   }
 }
-
-export { describeImage, getImageDataUrl } from "./describe-image";
-export { previewImage };
-export { consumePreviewUrl } from "./preview-image";

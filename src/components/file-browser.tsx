@@ -292,7 +292,7 @@ export function FileBrowser() {
 
   useEffect(() => {
     loadRoot();
-  }, [loadRoot, folderTree]);
+  }, [loadRoot, folderTree, collapsed]);
 
   if (!rootDir) return null;
 

@@ -81,6 +81,24 @@ export function ChatRoom() {
           return (
             <div key={i} className="flex justify-start">
               <div className="max-w-[85%] rounded-2xl px-4 py-2.5 streamdown-wrapper bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 space-y-2">
+                {m.downloadUrl && (
+                  <a
+                    href={m.downloadUrl}
+                    download={m.downloadName || "file"}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
+                  >
+                    <svg
+                      className="size-3"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M3 11v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M8 2v8M5 7l3 3 3-3" />
+                    </svg>
+                    Download{m.downloadName ? ` ${m.downloadName}` : ""}
+                  </a>
+                )}
                 {hasAssistantImgs && (
                   <>
                     {m.imageUrl && (
@@ -138,10 +156,8 @@ export function ChatRoom() {
               }
             `}</style>
             <span className="dot-loader text-zinc-400 dark:text-zinc-500">
-              <span style={{ animationDelay: "0s" }} />
-              {" "}
-              <span style={{ animationDelay: "0.2s" }} />
-              {" "}
+              <span style={{ animationDelay: "0s" }} />{" "}
+              <span style={{ animationDelay: "0.2s" }} />{" "}
               <span style={{ animationDelay: "0.4s" }} />
             </span>
           </div>

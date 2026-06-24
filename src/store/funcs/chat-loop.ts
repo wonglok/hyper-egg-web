@@ -52,6 +52,7 @@ You love emoji.
 - read_file — read a text file
 - write_file — create or overwrite a file
 - read_image — open an image and return a text description of its contents
+- download_file — generate a download link for a file
       `,
     };
 
@@ -85,6 +86,7 @@ You love emoji.
         const stream = await client.chat.completions.create(
           {
             model,
+            reasoning_effort: "minimal",
             stream: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             messages: conversation as any,
@@ -154,14 +156,14 @@ You love emoji.
             // For read_image, stream the vision response to the UI
             const onChunk =
               tc.function.name === "read_image"
-                ? ((content: string, reasoning?: string) => {
+                ? (content: string, reasoning?: string) => {
                     const msg: Message = {
                       role: "assistant",
                       content: content,
                       reasoning: reasoning,
                     };
                     set({ messages: [...conversation, msg] });
-                  })
+                  }
                 : undefined;
 
             const rawResult = await dispatchTool(
@@ -186,7 +188,6 @@ You love emoji.
                   conversation.push({
                     role: "assistant",
                     content: [
-                      // { type: "text", text: "Here is the image." },
                       { type: "image_url", image_url: { url: parsed.dataUrl } },
                     ],
                   });
@@ -199,6 +200,21 @@ You love emoji.
               } catch {
                 // not JSON — use raw result as-is
               }
+            }
+
+            // download_file returns a blob URL — inject a download
+            // message so the UI renders a download button
+            if (
+              tc.function.name === "download_file" &&
+              rawResult.startsWith("blob:")
+            ) {
+              const dlMsg: Message = {
+                role: "assistant",
+                content: `Download: ${String(args.path ?? "file")}`,
+                downloadUrl: rawResult,
+                downloadName: String(args.path ?? "file"),
+              };
+              conversation.push(dlMsg);
             }
 
             conversation.push({

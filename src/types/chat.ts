@@ -11,6 +11,8 @@ export type Message = {
   content: string | ContentBlock[];
   reasoning?: string;
   imageUrl?: string;
+  downloadUrl?: string;
+  downloadName?: string;
   tool_call_id?: string;
   tool_calls?: {
     id: string;

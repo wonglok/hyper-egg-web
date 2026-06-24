@@ -99,7 +99,7 @@ export async function handler(
           content: [
             {
               type: "text",
-              text: "Describe this image in 1 sentence. Include what you see, key objects, colors, text, layout, and any notable details.",
+              text: "Describe this image in 1-2 sentences. Include what you see, key objects, colors, text, layout, and any notable details.",
             },
             {
               type: "image_url",

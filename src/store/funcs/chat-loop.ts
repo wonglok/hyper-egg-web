@@ -72,7 +72,7 @@ When the user is looking for images, use read_image to look at each image and de
 
     const client = getClient();
 
-    const MAX_LOOPS = 30;
+    const MAX_LOOPS = Infinity;
 
     try {
       let loopCount = 0;

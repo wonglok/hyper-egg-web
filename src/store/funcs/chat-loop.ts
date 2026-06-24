@@ -50,13 +50,10 @@ You help answer user queries as a helpful assistant.
 - list_directory — browse folder contents
 - read_file — read a text file
 - write_file — create or overwrite a file
+- read_image — read and display an image file for visual analysis
 
-Always explore proactively — list the root directory first if the user hasn't specified a path.
-
-Try to help the user achieve their goal and don't stop until you have finished the goal.
-Or try to fulfill the user query and don't stop until you have fulfilled the query.
 ---
-Current directory structure:\n${treeListing}\n\n
+Current directory structure:\n\n${treeListing}\n\n
 ---
 請用繁體中文，廣東話版本 + emoji 回復我。
       `,
@@ -78,7 +75,7 @@ Current directory structure:\n${treeListing}\n\n
     const client = getClient();
 
     const MAX_LOOPS = 30;
-    const MAX_CONTROL_LOOPS = 5;
+    const MAX_CONTROL_LOOPS = 30;
 
     try {
       let controlLoopCount = 0;
@@ -172,7 +169,10 @@ Current directory structure:\n${treeListing}\n\n
                 tc.function.name,
                 args,
                 rootDir!,
+                undefined,
+                model,
               );
+
               conversation.push({
                 role: "tool",
                 content: result,

@@ -1,6 +1,7 @@
 import * as listDir from "./list-directory";
 import * as readFile from "./read-file";
 import * as writeFile from "./write-file";
+import * as readImage from "./read-image";
 import * as checkGoalReached from "./check-goal-reached";
 
 type OnChunk = (content: string, reasoning?: string) => void;
@@ -24,6 +25,7 @@ type ToolModule = {
     args: Record<string, unknown>,
     rootDir: FileSystemDirectoryHandle,
     onChunk?: OnChunk,
+    model?: string,
   ) => Promise<string>;
 };
 
@@ -31,6 +33,7 @@ const modules: Record<string, ToolModule> = {
   list_directory: listDir,
   read_file: readFile,
   write_file: writeFile,
+  read_image: readImage,
   checkGoalIsReached: checkGoalReached,
 };
 
@@ -41,11 +44,12 @@ export async function dispatchTool(
   args: Record<string, unknown>,
   rootDir: FileSystemDirectoryHandle,
   onChunk?: OnChunk,
+  model?: string,
 ): Promise<string> {
   const mod = modules[name];
   if (!mod) return "Error: unknown tool.";
   try {
-    return await mod.handler(args, rootDir, onChunk);
+    return await mod.handler(args, rootDir, onChunk, model);
   } catch (e) {
     return `Error: ${(e as Error).message}`;
   }

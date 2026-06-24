@@ -41,7 +41,16 @@ export async function resolvePath(
   root: FileSystemDirectoryHandle,
   path: string,
 ): Promise<FileSystemDirectoryHandle | FileSystemFileHandle> {
-  const parts = path.split("/").filter((p) => p && p !== "." && p !== "..");
+  // Build cleaned path segments, resolving ".." by popping the previous segment
+  const rawParts = path.split("/").filter((p) => p && p !== ".");
+  const parts: string[] = [];
+  for (const p of rawParts) {
+    if (p === "..") {
+      parts.pop();
+    } else {
+      parts.push(p);
+    }
+  }
   if (parts.length === 0) return root;
 
   let current: FileSystemDirectoryHandle | FileSystemFileHandle = root;
@@ -55,7 +64,23 @@ export async function resolvePath(
       try {
         current = await current.getFileHandle(part);
       } catch (e) {
-        throw new Error(`Cannot access "${part}": ${(e as Error).message}`);
+        // List available items so the model can self-correct
+        const available: string[] = [];
+        try {
+          for await (const [name] of current as FileSystemDirectoryHandle) {
+            available.push(name);
+            if (available.length >= 20) break;
+          }
+        } catch {
+          /* best-effort */
+        }
+        const hint =
+          available.length > 0
+            ? ` Available: ${available.join(", ")}`
+            : "";
+        throw new Error(
+          `Cannot access "${part}": ${(e as Error).message}.${hint}`,
+        );
       }
     }
   }

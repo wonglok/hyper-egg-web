@@ -1,4 +1,3 @@
-import { formatTree } from "../fs";
 import { TOOLS, dispatchTool } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
@@ -34,11 +33,9 @@ export function send(
   get: () => ChatStateValues,
 ) {
   return async () => {
-    const { input, messages, loading, model, folderTree } = get();
+    const { input, messages, loading, model } = get();
     const text = input.trim();
     if (!text || loading) return;
-
-    // const treeListing = folderTree ? formatTree(folderTree) : "";
 
     const SYSTEM_PROMPT: Message = {
       role: "system",
@@ -230,11 +227,15 @@ You must use display_image after you use read_image.
                 {
                   role: "user",
                   content:
-                    "Evaluate whether the user's original goal has been FULLY achieved. " +
+                    "Evaluate whether the user's original goal has been FULLY achieved.\n\n" +
+                    "Available tools: list_directory (browse folders), read_file (read text), " +
+                    "write_file (create/overwrite files), read_image (describe image contents in text), " +
+                    "display_image (show image directly).\n\n" +
                     "Answer ONLY with JSON:\n" +
-                    '{"reached": true/false, "suggestion": "concrete next step if not done, empty string if done"}\n' +
+                    '{"reached": true/false, "suggestion": "concrete next step if not done (mention specific tool + path), empty string if done"}\n' +
                     "Set reached=true ONLY if everything the user asked for is complete. " +
-                    "If the task is partially done or the model got distracted, set reached=false.",
+                    "If the task is partially done or the model got distracted, set reached=false. " +
+                    "Make the suggestion actionable — name the exact tool and file path to try next.",
                 },
               ],
             });

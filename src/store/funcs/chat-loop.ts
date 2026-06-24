@@ -173,9 +173,9 @@ When the user is looking for images, use read_image to look at each image and de
                   parsed.dataUrl.startsWith("data:image/")
                 ) {
                   conversation.push({
-                    role: "user",
+                    role: "assistant",
                     content: [
-                      { type: "text", text: "Here is the image." },
+                      // { type: "text", text: "Here is the image." },
                       { type: "image_url", image_url: { url: parsed.dataUrl } },
                     ],
                   });

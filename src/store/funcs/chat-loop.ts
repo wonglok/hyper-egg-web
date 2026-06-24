@@ -42,15 +42,13 @@ export function send(
       content: `
 # Role
 You find info for the user based on the directory structure.
-When the user is looking for images, use read_image to look at each image and describe what it shows — don't guess based on filenames alone. 
-You must use display_image after you use read_image.
+When the user is looking for images, use read_image to look at each image and describe what it shows — don't guess based on filenames alone.
 
 # Tools
 - list_directory — browse folder contents
 - read_file — read a text file
 - write_file — create or overwrite a file
 - read_image — open an image and return a text description of its contents
-- display_image — show an image directly in the chat for visual inspection
 
 # Response format
 - 請用繁體中文，廣東話版本 + emoji 回復我。
@@ -172,22 +170,6 @@ You must use display_image after you use read_image.
                 model,
               );
 
-              // display_image returns a PNG data URI — inject it so the
-              // model can see the image in the next turn
-              if (
-                tc.function.name === "display_image" &&
-                result.startsWith("data:image/")
-              ) {
-                conversation.push({
-                  role: "user",
-                  content: [
-                    { type: "text", text: "Here is the image." },
-                    { type: "image_url", image_url: { url: result } },
-                  ],
-                });
-                assistant.imageUrl = result;
-              }
-
               conversation.push({
                 role: "tool",
                 content: result,
@@ -230,7 +212,7 @@ You must use display_image after you use read_image.
                     "Evaluate whether the user's original goal has been FULLY achieved.\n\n" +
                     "Available tools: list_directory (browse folders), read_file (read text), " +
                     "write_file (create/overwrite files), read_image (describe image contents in text), " +
-                    "display_image (show image directly).\n\n" +
+                    "\n" +
                     "Answer ONLY with JSON:\n" +
                     '{"reached": true/false, "suggestion": "concrete next step if not done (mention specific tool + path), empty string if done"}\n' +
                     "Set reached=true ONLY if everything the user asked for is complete. " +

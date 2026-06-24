@@ -266,7 +266,27 @@ export function FileBrowser() {
           className={`size-3 transition-transform ${collapsed ? "" : "rotate-90"}`}
         />
         <FolderIcon className="size-3" />
-        <span>{folderTree?.name ?? "Files"}</span>
+        <span className="flex-1 text-left">{folderTree?.name ?? "Files"}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            loadRoot();
+          }}
+          className="shrink-0 rounded p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+          title="Refresh"
+        >
+          <svg
+            className="size-3"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M2 8a6 6 0 0 1 10.47-4M14 8a6 6 0 0 1-10.47 4" />
+            <path d="M14 2v4h-4M2 14v-4h4" />
+          </svg>
+        </button>
       </button>
 
       {!collapsed && (

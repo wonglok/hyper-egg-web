@@ -79,6 +79,8 @@ export async function describeImage(
   const stream = await visionClient.chat.completions.create({
     model: "google/gemma-4-e2b",
     stream: true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    reasoning_effort: "disabled" as any,
     messages: [
       {
         role: "user",

@@ -243,19 +243,39 @@ Current directory structure:\n${treeListing}\n\n
             set({ messages: [...conversation] });
           }
 
+          // stream the goal evaluation to the UI
+          assistant.content = "";
+          assistant.reasoning = "";
+          set({ messages: [...conversation, { ...assistant }] });
+
           const goal = await checkGoalIsReached({
             messages: conversation,
             model,
+            onChunk: (text) => {
+              assistant.reasoning! += text;
+              set({ messages: [...conversation, { ...assistant }] });
+            },
           });
-          if (goal.reached) {
-            break;
-          }
+
+          // persist the evaluation as an assistant message with reasoning intact
+          assistant.content = goal.reached
+            ? goal.summary || "Done."
+            : `Progress so far:\n${goal.summary}`;
           conversation.push({
-            role: "user",
+            role: "assistant",
+            content: assistant.content,
+            reasoning: assistant.reasoning,
+          });
+          set({ messages: [...conversation] });
+
+          if (goal.reached) break;
+
+          conversation.push({
+            role: "assistant",
             content: [
               {
                 type: "text",
-                text: `Progress so far:\n${goal.summary}\n\nNext step:\n${goal.suggestion}`,
+                text: `Information for next step:\n${goal.suggestion}`,
               },
             ],
           });

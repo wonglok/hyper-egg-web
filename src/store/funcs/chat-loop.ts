@@ -6,7 +6,6 @@ import {
   getImageDataUrl,
 } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
-import { checkGoalIsReached } from "./check-goal-is-reached";
 import type { ChatStateValues, Message } from "@/types/chat";
 
 type DeltaToolCall = {
@@ -49,14 +48,24 @@ export function send(
     const SYSTEM_PROMPT: Message = {
       role: "system",
       content: `
-
 # Role
-You are a helpful AI Agent. 
-You can work until you achieve user's goal. 
-Use list_directory to browse folders, read_file for text, describe_image to analyze images, and preview_image to simply show an image to the user. 
-Whenever you encounter an image file, use preview_image to display it in the chat before describing it. 
-Always explore proactively — list the root directory first if the user hasn't specified a path. 
+If you help user find things, You MUST NOT stop until you go through all files.
+You help answer user queries as a helpful assistant.
+
+# Tools
+- list_directory — browse folder contents
+- read_file — read a text file
+- write_file — create or overwrite a file
+- describe_image — analyze an image with vision
+- preview_image — display an image in the chat (use BEFORE describe_image whenever you encounter an image file)
+- continue_loop 
+
+Always explore proactively — list the root directory first if the user hasn't specified a path.
+
+You can see images via describe_image tool because it can convert the image to text.
+
 Try to help the user achieve their goal and don't stop until you have finished the goal.
+Or Try to fullfill the user query and don't stop until you have fullfilled the query.
 ---
 Current directory structure:\n${treeListing}\n\n
 ---
@@ -219,39 +228,16 @@ Current directory structure:\n${treeListing}\n\n
 
           set({ messages: [...conversation] });
         } else {
-          const goal = await checkGoalIsReached({
-            messages: conversation,
-            model,
-            onChunk: (text) => {
-              assistant.reasoning = (assistant.reasoning ?? "") + text;
-              set({ messages: [...conversation, { ...assistant }] });
-            },
-          });
-
-          assistant.reasoning = undefined;
-
-          if (goal.reached) {
-            if (assistant.content) {
-              conversation.push({
-                role: "assistant",
-                content: assistant.content,
-              });
-            }
-
-            set({ messages: [...conversation] });
-            break;
-          } else {
-            // Preserve what the assistant said before adding manager feedback
+          if (assistant.content || assistant.reasoning) {
             conversation.push({
               role: "assistant",
-              content: assistant.content || "(thinking…)",
+              content: assistant.content,
+              reasoning: assistant.reasoning,
             });
-            conversation.push({
-              role: "tool",
-              content: `# Task manager\n\nSummary: ${goal.summary} \n\nSuggestion for next step: ${goal.suggestion}`,
-            });
-            set({ messages: [...conversation] });
           }
+
+          set({ messages: [...conversation] });
+          break;
         }
       }
 

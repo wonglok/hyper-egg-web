@@ -36,7 +36,7 @@ export default function Home() {
   }, [fetchModels, restoreFolder, setOpenrouterKey, setProvider]);
 
   return (
-    <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full px-4">
+    <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full h-full px-4">
       <Gatekeeper>
         <div className="flex items-center gap-2 py-3 border-b border-zinc-200 dark:border-zinc-800">
           <button

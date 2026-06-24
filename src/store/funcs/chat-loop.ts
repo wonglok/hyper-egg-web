@@ -85,6 +85,11 @@ Current directory structure:\n${treeListing}\n\n
     try {
       while (loopCount < MAX_LOOPS) {
         loopCount++;
+
+        // Reset per-iteration state so content doesn't bleed across turns
+        assistant.content = "";
+        assistant.reasoning = undefined;
+
         const stream = await client.chat.completions.create(
           {
             model,
@@ -157,9 +162,6 @@ Current directory structure:\n${treeListing}\n\n
             }
 
             if (tc.function.name === "describe_image") {
-              assistant.content = "";
-              assistant.reasoning = undefined;
-
               let dataUrl = "";
               try {
                 const imgPath = String(args.path ?? ".");
@@ -215,64 +217,41 @@ Current directory structure:\n${treeListing}\n\n
             }
           }
 
-          assistant.content = assistant.content || "Browsing folder…";
-          assistant.reasoning = undefined;
-          assistant.imageUrl = undefined;
-          set({ messages: [...conversation, { ...assistant }] });
-        } else {
-          // final text response — already streamed, just sync conversation
-          assistant.content = assistant.content || "(empty response)";
-          conversation.push({
-            role: "assistant",
-            content: assistant.content,
-            reasoning: assistant.reasoning,
-          });
           set({ messages: [...conversation] });
-
-          // ensure the conversation ended with a valid assistant message
-          const last = conversation[conversation.length - 1];
-          if (
-            !last ||
-            last.role !== "assistant" ||
-            (typeof last.content === "string" && !last.content.trim())
-          ) {
-            conversation.push({
-              role: "assistant",
-              content: "(no response)",
-            });
-            set({ messages: [...conversation] });
-          }
-
-          // stream the goal evaluation to the UI
-          assistant.content = "";
-          assistant.reasoning = "";
-          set({ messages: [...conversation, { ...assistant }] });
-
+        } else {
           const goal = await checkGoalIsReached({
             messages: conversation,
             model,
             onChunk: (text) => {
-              assistant.reasoning! += text;
+              assistant.reasoning = (assistant.reasoning ?? "") + text;
               set({ messages: [...conversation, { ...assistant }] });
             },
           });
 
+          assistant.reasoning = undefined;
+
           if (goal.reached) {
+            if (assistant.content) {
+              conversation.push({
+                role: "assistant",
+                content: assistant.content,
+              });
+            }
+
+            set({ messages: [...conversation] });
             break;
+          } else {
+            // Preserve what the assistant said before adding manager feedback
+            conversation.push({
+              role: "assistant",
+              content: assistant.content || "(thinking…)",
+            });
+            conversation.push({
+              role: "tool",
+              content: `# Task manager\n\nSummary: ${goal.summary} \n\nSuggestion for next step: ${goal.suggestion}`,
+            });
+            set({ messages: [...conversation] });
           }
-
-          // // persist the evaluation as an assistant message with reasoning intact
-          // assistant.content = goal.reached
-          //   ? goal.summary || "Done."
-          //   : `Progress so far:\n${goal.summary} Information for next step:\n${goal.suggestion}`;
-          // conversation.push({
-          //   role: "assistant",
-          //   content: assistant.content,
-          //   reasoning: assistant.reasoning,
-          // });
-          // set({ messages: [...conversation] });
-
-          // if (goal.reached) break;
         }
       }
 

@@ -29,6 +29,7 @@ export async function checkGoalIsReached({
           role: "user",
           content:
             "Evaluate whether the user's goal has been achieved. The goal is achieved when EITHER:\n" +
+            "- User just sent a hi. OR\n" +
             "- The system detected hallucination or loop in the converstaion., OR\n" +
             "- The question the user asked has been fully answered, OR\n" +
             "- The task the user requested has been completed.\n" +

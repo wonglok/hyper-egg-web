@@ -139,12 +139,42 @@ function DirRow({
 
 function PathToolbar({ path }: { path: string }) {
   const { setInput } = useChatAction();
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    if (!rootDir) return;
+    setDownloading(true);
+    try {
+      const handle = await resolvePath(rootDir, path);
+      if (handle.kind !== "file") return;
+      const file = await (handle as FileSystemFileHandle).getFile();
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* ignore */
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div className="flex items-center gap-1.5 px-2 py-1 border-b border-zinc-200 dark:border-zinc-800 text-xs">
       <span className="flex-1 truncate font-mono text-zinc-500 dark:text-zinc-400">
         {path}
       </span>
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={downloading}
+        className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors disabled:opacity-50"
+        title="Download file"
+      >
+        {downloading ? "..." : "Download"}
+      </button>
       <button
         type="button"
         onClick={() => setInput(path)}

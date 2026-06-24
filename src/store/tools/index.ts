@@ -40,5 +40,6 @@ export async function dispatchTool(
   }
 }
 
-export { describeImage, previewImage };
+export { describeImage, getImageDataUrl } from "./describe-image";
+export { previewImage };
 export { consumePreviewUrl } from "./preview-image";

@@ -5,6 +5,20 @@ import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { useChat } from "@/store/useChat";
 import { useChatAction } from "@/store/useChatAction";
+import type { ContentBlock } from "@/types/chat";
+
+function contentText(content: string | ContentBlock[]): string {
+  if (typeof content === "string") return content;
+  return content
+    .filter((c): c is { type: "text"; text: string } => c.type === "text")
+    .map((c) => c.text)
+    .join("\n");
+}
+
+function contentHasImage(content: string | ContentBlock[]): boolean {
+  if (typeof content === "string") return false;
+  return content.some((c) => c.type === "image_url");
+}
 
 export function ChatRoom() {
   const messages = useChat((s) => s.messages);
@@ -29,21 +43,26 @@ export function ChatRoom() {
           const isLast = i === messages.length - 1;
           const isStreaming = loading && m.role === "assistant" && isLast;
 
-          if (m.role === "system") {
-            return (
-              <div key={i} className="flex justify-center">
-                <div className="max-w-[95%] rounded-xl px-3 py-2 text-xs font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 whitespace-pre-wrap">
-                  {m.content}
-                </div>
-              </div>
-            );
-          }
+          if (m.role === "system") return null;
 
           if (m.role === "user") {
+            const imgs = contentHasImage(m.content);
             return (
               <div key={i} className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
-                  {m.content}
+                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 space-y-2">
+                  {imgs &&
+                    (typeof m.content === "object" &&
+                      m.content
+                        .filter((c): c is { type: "image_url"; image_url: { url: string } } => c.type === "image_url")
+                        .map((c, j) => (
+                          <img
+                            key={j}
+                            src={c.image_url.url}
+                            alt="Attached"
+                            className="rounded-lg max-h-48 w-full object-contain bg-zinc-800 dark:bg-zinc-200"
+                          />
+                        )))}
+                  <div>{contentText(m.content)}</div>
                 </div>
               </div>
             );
@@ -70,9 +89,9 @@ export function ChatRoom() {
                     </div>
                   </details>
                 )}
-                {m.content ? (
+                {contentText(m.content) ? (
                   <Streamdown mode={isStreaming ? "streaming" : "static"}>
-                    {m.content}
+                    {contentText(m.content)}
                   </Streamdown>
                 ) : isStreaming ? (
                   <span className="text-zinc-400 italic">Thinking…</span>

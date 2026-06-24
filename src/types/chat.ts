@@ -2,9 +2,13 @@ import type { TreeNode } from "@/store/fs";
 
 export type Model = { id: string; object: string };
 
+export type ContentBlock =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
 export type Message = {
   role: "user" | "assistant" | "system" | "tool";
-  content: string;
+  content: string | ContentBlock[];
   reasoning?: string;
   imageUrl?: string;
   tool_call_id?: string;

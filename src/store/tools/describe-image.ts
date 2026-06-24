@@ -22,6 +22,48 @@ export function getImageMimeType(name: string): string {
   return IMAGE_EXTENSIONS[ext] ?? "image/png";
 }
 
+function resizeImage(
+  dataUrl: string,
+  maxDim: number,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        resolve(dataUrl);
+        return;
+      }
+      const ratio = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+export async function getImageDataUrl(
+  handle: FileSystemFileHandle,
+): Promise<string> {
+  const file = await handle.getFile();
+  const buffer = await file.arrayBuffer();
+  const base64 = btoa(
+    new Uint8Array(buffer).reduce((s, b) => s + String.fromCharCode(b), ""),
+  );
+  const mime = getImageMimeType(file.name);
+  const dataUrl = `data:${mime};base64,${base64}`;
+  return resizeImage(dataUrl, 1024);
+}
+
 export async function describeImage(
   handle: FileSystemFileHandle,
   onChunk?: (content: string, reasoning?: string) => void,

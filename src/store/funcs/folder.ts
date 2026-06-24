@@ -1,5 +1,5 @@
 import localforage from "localforage";
-import { listDir } from "../fs";
+import { listDir, readTree } from "../fs";
 import { setRootDir } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 
@@ -21,7 +21,11 @@ async function verifyFolder(
     const testName = `__gatekeeper_${Date.now()}__`;
     await dir.getFileHandle(testName, { create: true });
     writable = true;
-    try { await dir.removeEntry(testName); } catch { /* cleanup best-effort */ }
+    try {
+      await dir.removeEntry(testName);
+    } catch {
+      /* cleanup best-effort */
+    }
   } catch {
     // write is optional — folder still usable read-only
   }
@@ -29,14 +33,14 @@ async function verifyFolder(
   return { readable: true, writable };
 }
 
-function systemMsg(name: string): Message {
-  return {
-    role: "system",
-    content: `Folder "${name}" is ready. Always call list_directory('.') first to see what's inside, then read files as needed. For images (PNG, JPEG, GIF, etc.), use describe_image to analyze or preview_image to simply display them. If the user asks a general question without specifying a file, explore the folder yourself to find relevant files.
-
-請用繁體中文，廣東話版本 + emoji 回復我。`,
-  };
-}
+// function systemMsg(name: string): Message {
+//   return {
+//     role: "system",
+//     content: `Folder "${name}" is ready. Always call list_directory('.') first to see what's inside, then read files as needed. For images (PNG, JPEG, GIF, etc.), use describe_image to analyze or preview_image to simply display them. If the user asks a general question without specifying a file, explore the folder yourself to find relevant files.
+// 請用繁體中文，廣東話版本 + emoji 回復我。`,
+//   };
+// }
+// , systemMsg(stored.name)
 
 export function restoreFolder(
   set: (s: Partial<ChatStateValues>) => void,
@@ -71,11 +75,12 @@ export function restoreFolder(
 
       setRootDir(stored);
       const status = verified.writable ? "ready" : "readonly";
+      const tree = await readTree(stored);
       set({
-        folderTree: { name: stored.name, kind: "directory", children: [] },
+        folderTree: tree,
         gateStatus: status,
         gateError: "",
-        messages: [...get().messages, systemMsg(stored.name)],
+        messages: [...get().messages],
       });
     } catch {
       set({ gateStatus: "idle" });
@@ -106,11 +111,12 @@ export function pickFolder(
       setRootDir(dir);
       await localforage.setItem("rootDir", dir);
       const status = verified.writable ? "ready" : "readonly";
+      const tree = await readTree(dir);
       set({
-        folderTree: { name: dir.name, kind: "directory", children: [] },
+        folderTree: tree,
         gateStatus: status,
         gateError: "",
-        messages: [...get().messages, systemMsg(dir.name)],
+        messages: [...get().messages],
       });
     } catch {
       // user cancelled — keep current status

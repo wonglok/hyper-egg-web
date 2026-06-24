@@ -1,5 +1,5 @@
-import { resolvePath } from "../fs";
-import { TOOLS, dispatchTool, consumePreviewUrl } from "../tools";
+import { resolvePath, formatTree } from "../fs";
+import { TOOLS, dispatchTool, consumePreviewUrl, getImageDataUrl } from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 
@@ -34,14 +34,28 @@ export function send(
   get: () => ChatStateValues,
 ) {
   return async () => {
-    const { input, messages, loading, model } = get();
+    const { input, messages, loading, model, folderTree } = get();
     const text = input.trim();
     if (!text || loading) return;
 
+    const treeListing = folderTree ? formatTree(folderTree) : "";
+
     const SYSTEM_PROMPT: Message = {
       role: "system",
-      content:
-        "You are a helpful AI file explorer. Use list_directory to browse folders, read_file for text, describe_image to analyze images, and preview_image to simply show an image to the user. Whenever you encounter an image file, use preview_image to display it in the chat before describing it. Always explore proactively — list the root directory first if the user hasn't specified a path. 請用繁體中文，廣東話版本 + emoji 回復我。",
+      content: `
+
+# Role
+You are a helpful AI Agent. 
+You can work until you achieve user's goal. 
+Use list_directory to browse folders, read_file for text, describe_image to analyze images, and preview_image to simply show an image to the user. 
+Whenever you encounter an image file, use preview_image to display it in the chat before describing it. 
+Always explore proactively — list the root directory first if the user hasn't specified a path. 
+Try to help the user achieve their goal and don't stop until you have finished the goal.
+---
+Current directory structure:\n${treeListing}\n\n
+---
+請用繁體中文，廣東話版本 + emoji 回復我。
+      `,
     };
 
     const conversation: Message[] =
@@ -139,32 +153,40 @@ export function send(
             if (tc.function.name === "describe_image") {
               assistant.content = "";
               assistant.reasoning = undefined;
+
+              let dataUrl = "";
               try {
                 const imgPath = String(args.path ?? ".");
                 const imgHandle = await resolvePath(rootDir!, imgPath);
                 if (imgHandle.kind === "file") {
-                  const file = await imgHandle.getFile();
-                  assistant.imageUrl = URL.createObjectURL(file);
+                  dataUrl = await getImageDataUrl(imgHandle);
+                  assistant.imageUrl = dataUrl;
                 }
               } catch {
                 /* preview not critical */
               }
 
-              const result = await dispatchTool(
-                tc.function.name,
-                args,
-                rootDir!,
-                (content, reasoning) => {
-                  if (content) assistant.content += content;
-                  if (reasoning)
-                    assistant.reasoning =
-                      (assistant.reasoning ?? "") + reasoning;
-                  set({ messages: [...conversation, { ...assistant }] });
-                },
-              );
+              if (dataUrl) {
+                conversation.push({
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Here is the image. Please describe it in detail.",
+                    },
+                    {
+                      type: "image_url",
+                      image_url: { url: dataUrl },
+                    },
+                  ],
+                });
+              }
+
               conversation.push({
                 role: "tool",
-                content: result,
+                content: dataUrl
+                  ? "Image loaded and shown to the model for direct vision."
+                  : "Failed to load image.",
                 tool_call_id: tc.id,
               });
             } else {
@@ -203,7 +225,7 @@ export function send(
 
           // ensure the conversation ended with a valid assistant message
           const last = conversation[conversation.length - 1];
-          if (!last || last.role !== "assistant" || !last.content?.trim()) {
+          if (!last || last.role !== "assistant" || (typeof last.content === "string" && !last.content.trim())) {
             conversation.push({
               role: "assistant",
               content: "(no response)",
@@ -237,7 +259,8 @@ export function send(
       const lastMsg = msgs[msgs.length - 1];
       if (
         lastMsg?.role === "assistant" &&
-        !lastMsg.content?.trim() &&
+        typeof lastMsg.content === "string" &&
+        !lastMsg.content.trim() &&
         !lastMsg.tool_calls?.length &&
         !lastMsg.imageUrl
       ) {

@@ -247,15 +247,18 @@ Current directory structure:\n${treeListing}\n\n
             messages: conversation,
             model,
           });
-          if (goal?.reached) {
+          if (goal.reached) {
             break;
-          } else {
-            conversation.push({
-              role: "user",
-              content:
-                "Continue working. The goal is not yet fully achieved — keep exploring or helping until done.",
-            });
           }
+          conversation.push({
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Progress so far:\n${goal.summary}\n\nNext step:\n${goal.suggestion}`,
+              },
+            ],
+          });
         }
       }
 

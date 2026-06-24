@@ -1,13 +1,19 @@
 import { getClient } from "./shared";
 import type { Message } from "@/types/chat";
 
+export type GoalCheck = {
+  reached: boolean;
+  summary: string;
+  suggestion: string;
+};
+
 export async function checkGoalIsReached({
   messages,
   model,
 }: {
   messages: Message[];
   model: string;
-}): Promise<{ reached: boolean }> {
+}): Promise<GoalCheck> {
   const client = getClient();
 
   try {
@@ -20,16 +26,29 @@ export async function checkGoalIsReached({
         {
           role: "user",
           content:
-            'Based on the conversation above, is the user\'s original request fully achieved? Answer ONLY with JSON: {"reached":true} or {"reached":false}. Say false if any task is incomplete, the user has follow-up needs, or more exploration/action would be helpful.',
+            'Based on the conversation above, evaluate progress toward the user\'s original request. Answer ONLY with JSON:\n' +
+            '{"reached": true/false, "summary": "what has been accomplished so far", "suggestion": "concrete next step to take, or empty string if done"}\n' +
+            'If the goal is fully achieved, set reached=true, summarize accomplishments, and leave suggestion empty. ' +
+            'If not fully achieved, set reached=false, summarize what\'s been done, and provide a specific next step.',
         },
       ],
     });
 
     const text = res.choices[0]?.message?.content ?? "";
-    const match = text.match(/\{\s*"reached"\s*:\s*(true|false)\s*\}/);
-    if (match) return { reached: match[1] === "true" };
-    return { reached: !text.toLowerCase().includes("false") };
+    try {
+      const json = JSON.parse(
+        text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1),
+      );
+      return {
+        reached: Boolean(json.reached),
+        summary: typeof json.summary === "string" ? json.summary : "",
+        suggestion: typeof json.suggestion === "string" ? json.suggestion : "",
+      };
+    } catch {
+      const reached = !/"(?:reached|done|complete)"\s*:\s*false/i.test(text);
+      return { reached, summary: "", suggestion: "" };
+    }
   } catch {
-    return { reached: true }; // on error, stop to avoid infinite loop
+    return { reached: true, summary: "", suggestion: "" };
   }
 }

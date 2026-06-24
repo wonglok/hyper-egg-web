@@ -53,7 +53,7 @@ async function resizeToDataUrl(blob: Blob): Promise<string> {
 export async function handler(
   args: Record<string, unknown>,
   rootDir: FileSystemDirectoryHandle,
-  _onChunk?: (content: string, reasoning?: string) => void,
+  onChunk?: (content: string, reasoning?: string) => void,
   model?: string,
 ): Promise<string> {
   const path = String(args.path ?? ".");
@@ -89,8 +89,10 @@ export async function handler(
   const client = getClient();
 
   try {
-    const response = await client.chat.completions.create({
+    const stream = await client.chat.completions.create({
       model,
+      reasoning_effort: "none",
+      stream: true,
       messages: [
         {
           role: "user",
@@ -108,12 +110,29 @@ export async function handler(
       ],
     });
 
-    const description =
-      response.choices[0]?.message?.content || "(no description)";
+    let description = "";
+    let reasoning = "";
 
-    // Return both the data URL and description so the chat loop can
-    // inject the image for display while using the description as the tool result
-    return JSON.stringify({ dataUrl, description });
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      if (!delta) continue;
+
+      const r = (delta as Record<string, string>).reasoning_content;
+      if (r) {
+        reasoning += r;
+        onChunk?.(description, reasoning);
+      }
+
+      if (delta.content) {
+        description += delta.content;
+        onChunk?.(description, reasoning);
+      }
+    }
+
+    return JSON.stringify({
+      dataUrl,
+      description: description || "(no description)",
+    });
   } catch (e) {
     return JSON.stringify({
       dataUrl,

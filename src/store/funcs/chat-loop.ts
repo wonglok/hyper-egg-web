@@ -151,11 +151,24 @@ You love emoji.
               /* use empty args */
             }
 
+            // For read_image, stream the vision response to the UI
+            const onChunk =
+              tc.function.name === "read_image"
+                ? ((content: string, reasoning?: string) => {
+                    const msg: Message = {
+                      role: "assistant",
+                      content: content,
+                      reasoning: reasoning,
+                    };
+                    set({ messages: [...conversation, msg] });
+                  })
+                : undefined;
+
             const rawResult = await dispatchTool(
               tc.function.name,
               args,
               rootDir!,
-              undefined,
+              onChunk,
               model,
             );
 

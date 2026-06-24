@@ -299,6 +299,7 @@ export function FileBrowser() {
   return (
     <div className="border-t border-zinc-200 dark:border-zinc-800">
       {/* header */}
+
       <button
         type="button"
         onClick={() => setCollapsed(!collapsed)}

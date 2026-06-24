@@ -1,6 +1,12 @@
 import { resolvePath, formatTree } from "../fs";
-import { TOOLS, dispatchTool, consumePreviewUrl, getImageDataUrl } from "../tools";
+import {
+  TOOLS,
+  dispatchTool,
+  consumePreviewUrl,
+  getImageDataUrl,
+} from "../tools";
 import { getClient, abort, rootDir, setAbort } from "./shared";
+import { checkGoalIsReached } from "./check-goal-is-reached";
 import type { ChatStateValues, Message } from "@/types/chat";
 
 type DeltaToolCall = {
@@ -225,7 +231,11 @@ Current directory structure:\n${treeListing}\n\n
 
           // ensure the conversation ended with a valid assistant message
           const last = conversation[conversation.length - 1];
-          if (!last || last.role !== "assistant" || (typeof last.content === "string" && !last.content.trim())) {
+          if (
+            !last ||
+            last.role !== "assistant" ||
+            (typeof last.content === "string" && !last.content.trim())
+          ) {
             conversation.push({
               role: "assistant",
               content: "(no response)",
@@ -233,7 +243,19 @@ Current directory structure:\n${treeListing}\n\n
             set({ messages: [...conversation] });
           }
 
-          break;
+          const goal = await checkGoalIsReached({
+            messages: conversation,
+            model,
+          });
+          if (goal?.reached) {
+            break;
+          } else {
+            conversation.push({
+              role: "user",
+              content:
+                "Continue working. The goal is not yet fully achieved — keep exploring or helping until done.",
+            });
+          }
         }
       }
 

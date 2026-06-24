@@ -3,11 +3,25 @@ import * as readFile from "./read-file";
 import * as describeImage from "./describe-image";
 import * as writeFile from "./write-file";
 import * as previewImage from "./preview-image";
+import * as checkGoalReached from "./check-goal-reached";
 
 type OnChunk = (content: string, reasoning?: string) => void;
 
+type ToolDefinition = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
+};
+
 type ToolModule = {
-  definition: typeof listDir.definition;
+  definition: ToolDefinition;
   handler: (
     args: Record<string, unknown>,
     rootDir: FileSystemDirectoryHandle,
@@ -21,6 +35,7 @@ const modules: Record<string, ToolModule> = {
   describe_image: describeImage,
   write_file: writeFile,
   preview_image: previewImage,
+  checkGoalIsReached: checkGoalReached,
 };
 
 export const TOOLS = Object.values(modules).map((m) => m.definition);

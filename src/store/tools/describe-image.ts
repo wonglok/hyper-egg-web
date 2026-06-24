@@ -22,10 +22,7 @@ export function getImageMimeType(name: string): string {
   return IMAGE_EXTENSIONS[ext] ?? "image/png";
 }
 
-function resizeImage(
-  dataUrl: string,
-  maxDim: number,
-): Promise<string> {
+function resizeImage(dataUrl: string, maxDim: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -42,7 +39,10 @@ function resizeImage(
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve(dataUrl); return; }
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL("image/jpeg", 0.85));
     };
@@ -85,7 +85,7 @@ export async function describeImage(
         content: [
           {
             type: "text" as const,
-            text: "Describe this image in detail. Include any text visible in the image, the layout, colors, objects, and overall impression.",
+            text: "Describe this image in 1 sentence. Include any text visible in the image, the layout, colors, objects, and overall impression.",
           },
           { type: "image_url" as const, image_url: { url: dataUrl } },
         ],

@@ -2,6 +2,7 @@ import * as listDir from "./list-directory";
 import * as readFile from "./read-file";
 import * as writeFile from "./write-file";
 import * as readImage from "./read-image";
+import * as displayImage from "./display-image";
 import * as checkGoalReached from "./check-goal-reached";
 
 type OnChunk = (content: string, reasoning?: string) => void;
@@ -34,6 +35,7 @@ const modules: Record<string, ToolModule> = {
   read_file: readFile,
   write_file: writeFile,
   read_image: readImage,
+  display_image: displayImage,
   checkGoalIsReached: checkGoalReached,
 };
 

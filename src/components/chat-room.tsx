@@ -15,6 +15,16 @@ function contentText(content: string | ContentBlock[]): string {
     .join("\n");
 }
 
+function contentImages(content: string | ContentBlock[]): string[] {
+  if (typeof content === "string") return [];
+  return content
+    .filter(
+      (c): c is { type: "image_url"; image_url: { url: string } } =>
+        c.type === "image_url",
+    )
+    .map((c) => c.image_url.url);
+}
+
 function contentHasImage(content: string | ContentBlock[]): boolean {
   if (typeof content === "string") return false;
   return content.some((c) => c.type === "image_url");
@@ -46,22 +56,19 @@ export function ChatRoom() {
           if (m.role === "system") return null;
 
           if (m.role === "user") {
-            const imgs = contentHasImage(m.content);
+            const userImgs = contentImages(m.content);
             return (
               <div key={i} className="flex justify-end">
                 <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 space-y-2">
-                  {imgs &&
-                    (typeof m.content === "object" &&
-                      m.content
-                        .filter((c): c is { type: "image_url"; image_url: { url: string } } => c.type === "image_url")
-                        .map((c, j) => (
-                          <img
-                            key={j}
-                            src={c.image_url.url}
-                            alt="Attached"
-                            className="rounded-lg max-h-48 w-full object-contain bg-zinc-800 dark:bg-zinc-200"
-                          />
-                        )))}
+                  {contentHasImage(m.content) &&
+                    userImgs.map((url, j) => (
+                      <img
+                        key={j}
+                        src={url}
+                        alt="Attached"
+                        className="rounded-lg max-h-48 w-full object-contain bg-zinc-800 dark:bg-zinc-200"
+                      />
+                    ))}
                   <div>{contentText(m.content)}</div>
                 </div>
               </div>
@@ -69,15 +76,30 @@ export function ChatRoom() {
           }
 
           // assistant message — render with Streamdown
+          const assistantImgs = contentImages(m.content);
+          const hasAssistantImgs =
+            m.imageUrl || contentHasImage(m.content);
           return (
             <div key={i} className="flex justify-start">
               <div className="max-w-[85%] rounded-2xl px-4 py-2.5 streamdown-wrapper bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 space-y-2">
-                {m.imageUrl && (
-                  <img
-                    src={m.imageUrl}
-                    alt="Preview"
-                    className="rounded-lg max-h-64 w-full object-contain bg-zinc-200 dark:bg-zinc-700"
-                  />
+                {hasAssistantImgs && (
+                  <>
+                    {m.imageUrl && (
+                      <img
+                        src={m.imageUrl}
+                        alt="Preview"
+                        className="rounded-lg max-h-64 w-full object-contain bg-zinc-200 dark:bg-zinc-700"
+                      />
+                    )}
+                    {assistantImgs.map((url, j) => (
+                      <img
+                        key={`inline-${j}`}
+                        src={url}
+                        alt="Inline"
+                        className="rounded-lg max-h-64 w-full object-contain bg-zinc-200 dark:bg-zinc-700"
+                      />
+                    ))}
+                  </>
                 )}
                 {m.reasoning && (
                   <details className="text-xs" open={isStreaming}>

@@ -38,24 +38,26 @@ export function send(
     const text = input.trim();
     if (!text || loading) return;
 
-    const treeListing = folderTree ? formatTree(folderTree) : "";
+    // const treeListing = folderTree ? formatTree(folderTree) : "";
 
     const SYSTEM_PROMPT: Message = {
       role: "system",
       content: `
 # Role
-You help answer user queries as a helpful assistant.
+You find info for the user based on the directory structure.
+When the user is looking for images, use read_image to look at each image and describe what it shows — don't guess based on filenames alone. 
+You must use display_image after you use read_image.
 
 # Tools
 - list_directory — browse folder contents
 - read_file — read a text file
 - write_file — create or overwrite a file
-- read_image — read and display an image file for visual analysis
+- read_image — open an image and return a text description of its contents
+- display_image — show an image directly in the chat for visual inspection
 
----
-Current directory structure:\n\n${treeListing}\n\n
----
-請用繁體中文，廣東話版本 + emoji 回復我。
+# Response format
+- 請用繁體中文，廣東話版本 + emoji 回復我。
+
       `,
     };
 
@@ -173,6 +175,22 @@ Current directory structure:\n\n${treeListing}\n\n
                 model,
               );
 
+              // display_image returns a PNG data URI — inject it so the
+              // model can see the image in the next turn
+              if (
+                tc.function.name === "display_image" &&
+                result.startsWith("data:image/")
+              ) {
+                conversation.push({
+                  role: "user",
+                  content: [
+                    { type: "text", text: "Here is the image." },
+                    { type: "image_url", image_url: { url: result } },
+                  ],
+                });
+                assistant.imageUrl = result;
+              }
+
               conversation.push({
                 role: "tool",
                 content: result,
@@ -221,25 +239,11 @@ Current directory structure:\n\n${treeListing}\n\n
               ],
             });
 
-            // Animated three-dot SVG for the goal-check placeholder
-            const dotsSvg = [
-              '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="16" viewBox="0 0 44 16">',
-              '<circle cx="6" cy="8" r="5" fill="#999">',
-              '<animate attributeName="opacity" values="1;0.15;1" dur="1.2s" repeatCount="indefinite" begin="0s"/>',
-              "</circle>",
-              '<circle cx="22" cy="8" r="5" fill="#999">',
-              '<animate attributeName="opacity" values="1;0.15;1" dur="1.2s" repeatCount="indefinite" begin="0.4s"/>',
-              "</circle>",
-              '<circle cx="38" cy="8" r="5" fill="#999">',
-              '<animate attributeName="opacity" values="1;0.15;1" dur="1.2s" repeatCount="indefinite" begin="0.8s"/>',
-              "</circle>",
-              "</svg>",
-            ].join("");
-            const dotsDataUri = `data:image/svg+xml,${encodeURIComponent(dotsSvg)}`;
-
+            // Temporary message so the UI's native "Thinking…" indicator
+            // plays while the evaluation streams into the reasoning field
             const evalMsg: Message = {
               role: "assistant",
-              content: `![:loading](${dotsDataUri})`,
+              content: "",
               reasoning: "",
             };
             let evalText = "";

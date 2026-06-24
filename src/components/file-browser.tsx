@@ -19,6 +19,12 @@ function isPdf(name: string) {
   return name.toLowerCase().endsWith(".pdf");
 }
 
+function isHtml(name: string) {
+  return (
+    name.toLowerCase().endsWith(".html") || name.toLowerCase().endsWith(".htm")
+  );
+}
+
 async function readDir(dir: FileSystemDirectoryHandle): Promise<Entry[]> {
   const entries: Entry[] = [];
   for await (const [name, handle] of dir) {
@@ -85,6 +91,11 @@ function DirRow({
         {isImage(entry.name) && (
           <span className="text-[10px] text-zinc-400 ml-auto shrink-0">
             img
+          </span>
+        )}
+        {isHtml(entry.name) && (
+          <span className="text-[10px] text-zinc-400 ml-auto shrink-0">
+            html
           </span>
         )}
       </button>
@@ -170,7 +181,7 @@ function Preview({ path }: { path: string }) {
 
         const file = await handle.getFile();
 
-        if (isImage(file.name) || isPdf(file.name)) {
+        if (isImage(file.name) || isPdf(file.name) || isHtml(file.name)) {
           setObjectUrl(URL.createObjectURL(file));
         } else {
           setContent(await file.text());
@@ -205,14 +216,15 @@ function Preview({ path }: { path: string }) {
   }
 
   if (objectUrl) {
-    const pdf = isPdf(path);
+    const iframe = isPdf(path) || isHtml(path);
     return (
       <div className="h-full">
-        {pdf ? (
+        {iframe ? (
           <iframe
             src={objectUrl}
             className="w-full h-full rounded"
-            title="PDF Preview"
+            title={isHtml(path) ? "HTML Preview" : "PDF Preview"}
+            sandbox={isHtml(path) ? "allow-scripts" : undefined}
           />
         ) : (
           <div className="flex items-center justify-center p-2 h-full">
@@ -267,8 +279,7 @@ export function FileBrowser() {
         />
         <FolderIcon className="size-3" />
         <span className="flex-1 text-left">{folderTree?.name ?? "Files"}</span>
-        <button
-          type="button"
+        <div
           onClick={(e) => {
             e.stopPropagation();
             loadRoot();
@@ -286,7 +297,7 @@ export function FileBrowser() {
             <path d="M2 8a6 6 0 0 1 10.47-4M14 8a6 6 0 0 1-10.47 4" />
             <path d="M14 2v4h-4M2 14v-4h4" />
           </svg>
-        </button>
+        </div>
       </button>
 
       {!collapsed && (

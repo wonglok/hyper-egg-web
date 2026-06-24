@@ -49,7 +49,7 @@ export function send(
       role: "system",
       content: `
 # Role
-If you help user find things, You MUST NOT stop until you go through all files.
+If you help user find things, You MUST NOT stop until you go through all files and you can even use describe_image for understanding image.
 You help answer user queries as a helpful assistant.
 
 # Tools
@@ -58,7 +58,6 @@ You help answer user queries as a helpful assistant.
 - write_file — create or overwrite a file
 - describe_image — analyze an image with vision
 - preview_image — display an image in the chat (use BEFORE describe_image whenever you encounter an image file)
-- continue_loop 
 
 Always explore proactively — list the root directory first if the user hasn't specified a path.
 
@@ -88,162 +87,226 @@ Current directory structure:\n${treeListing}\n\n
 
     const client = getClient();
 
-    let loopCount = 0;
     const MAX_LOOPS = 30;
+    const MAX_CONTROL_LOOPS = 5;
 
     try {
-      while (loopCount < MAX_LOOPS) {
-        loopCount++;
+      let controlLoopCount = 0;
 
-        // Reset per-iteration state so content doesn't bleed across turns
-        assistant.content = "";
-        assistant.reasoning = undefined;
+      // Outer control loop — evaluates whether the goal is truly achieved
+      // before stopping. Restarts the inner exploration loop if needed.
+      while (controlLoopCount < MAX_CONTROL_LOOPS) {
+        controlLoopCount++;
+        let loopCount = 0;
+        let innerExitedCleanly = false;
 
-        const stream = await client.chat.completions.create(
-          {
-            model,
-            stream: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            messages: conversation as any,
-            tools: TOOLS,
-            tool_choice: "auto",
-          },
-          { signal: controller.signal },
-        );
+        // Inner core loop — tool-based exploration
+        while (loopCount < MAX_LOOPS) {
+          loopCount++;
 
-        const accumulatedTools = new Map<number, DeltaToolCall>();
+          // Reset per-iteration state so content doesn't bleed across turns
+          assistant.content = "";
+          assistant.reasoning = undefined;
 
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta;
-          if (!delta) continue;
+          const stream = await client.chat.completions.create(
+            {
+              model,
+              stream: true,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              messages: conversation as any,
+              tools: TOOLS,
+              tool_choice: "auto",
+            },
+            { signal: controller.signal },
+          );
 
-          // reasoning / thinking content
-          const reasoning = (delta as Record<string, string>).reasoning_content;
-          if (reasoning) {
-            assistant.reasoning = (assistant.reasoning ?? "") + reasoning;
-            set({ messages: [...conversation, { ...assistant }] });
-          }
+          const accumulatedTools = new Map<number, DeltaToolCall>();
 
-          // regular content
-          if (delta.content) {
-            assistant.content += delta.content;
-            set({ messages: [...conversation, { ...assistant }] });
-          }
+          for await (const chunk of stream) {
+            const delta = chunk.choices[0]?.delta;
+            if (!delta) continue;
 
-          // tool calls
-          const toolDeltas = delta.tool_calls as DeltaToolCall[] | undefined;
-          if (toolDeltas) {
-            mergeToolCalls(accumulatedTools, toolDeltas);
-          }
-
-          // finish_reason is informational — stream ends when the iterator is done
-        }
-
-        // build completed tool calls from accumulated deltas
-        const toolCalls: Message["tool_calls"] = [];
-        for (const [, tc] of accumulatedTools) {
-          if (tc.id && tc.function?.name) {
-            toolCalls.push({
-              id: tc.id,
-              type: "function" as const,
-              function: {
-                name: tc.function.name,
-                arguments: tc.function.arguments ?? "{}",
-              },
-            });
-          }
-        }
-
-        if (toolCalls.length > 0) {
-          conversation.push({
-            role: "assistant",
-            content: assistant.content,
-            reasoning: assistant.reasoning,
-            tool_calls: toolCalls,
-          });
-
-          for (const tc of toolCalls) {
-            let args: Record<string, unknown> = {};
-            try {
-              args = JSON.parse(tc.function.arguments);
-            } catch {
-              /* use empty args */
+            // reasoning / thinking content
+            const reasoning = (delta as Record<string, string>).reasoning_content;
+            if (reasoning) {
+              assistant.reasoning = (assistant.reasoning ?? "") + reasoning;
+              set({ messages: [...conversation, { ...assistant }] });
             }
 
-            if (tc.function.name === "describe_image") {
-              let dataUrl = "";
-              try {
-                const imgPath = String(args.path ?? ".");
-                const imgHandle = await resolvePath(rootDir!, imgPath);
-                if (imgHandle.kind === "file") {
-                  dataUrl = await getImageDataUrl(imgHandle);
-                  assistant.imageUrl = dataUrl;
-                }
-              } catch {
-                /* preview not critical */
-              }
+            // regular content
+            if (delta.content) {
+              assistant.content += delta.content;
+              set({ messages: [...conversation, { ...assistant }] });
+            }
 
-              if (dataUrl) {
-                conversation.push({
-                  role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: "Here is the image. Please describe it in detail.",
-                    },
-                    {
-                      type: "image_url",
-                      image_url: { url: dataUrl },
-                    },
-                  ],
-                });
-              }
-
-              conversation.push({
-                role: "tool",
-                content: dataUrl
-                  ? "Image loaded and shown to the model for direct vision."
-                  : "Failed to load image.",
-                tool_call_id: tc.id,
-              });
-            } else {
-              const result = await dispatchTool(
-                tc.function.name,
-                args,
-                rootDir!,
-              );
-              conversation.push({
-                role: "tool",
-                content: result,
-                tool_call_id: tc.id,
-              });
-
-              // attach preview image URL from preview_image tool
-              if (tc.function.name === "preview_image") {
-                const url = consumePreviewUrl();
-                if (url) assistant.imageUrl = url;
-              }
+            // tool calls
+            const toolDeltas = delta.tool_calls as DeltaToolCall[] | undefined;
+            if (toolDeltas) {
+              mergeToolCalls(accumulatedTools, toolDeltas);
             }
           }
 
-          set({ messages: [...conversation] });
-        } else {
-          if (assistant.content || assistant.reasoning) {
+          // build completed tool calls from accumulated deltas
+          const toolCalls: Message["tool_calls"] = [];
+          for (const [, tc] of accumulatedTools) {
+            if (tc.id && tc.function?.name) {
+              toolCalls.push({
+                id: tc.id,
+                type: "function" as const,
+                function: {
+                  name: tc.function.name,
+                  arguments: tc.function.arguments ?? "{}",
+                },
+              });
+            }
+          }
+
+          if (toolCalls.length > 0) {
             conversation.push({
               role: "assistant",
               content: assistant.content,
               reasoning: assistant.reasoning,
+              tool_calls: toolCalls,
             });
+
+            for (const tc of toolCalls) {
+              let args: Record<string, unknown> = {};
+              try {
+                args = JSON.parse(tc.function.arguments);
+              } catch {
+                /* use empty args */
+              }
+
+              if (tc.function.name === "describe_image") {
+                let dataUrl = "";
+                try {
+                  const imgPath = String(args.path ?? ".");
+                  const imgHandle = await resolvePath(rootDir!, imgPath);
+                  if (imgHandle.kind === "file") {
+                    dataUrl = await getImageDataUrl(imgHandle);
+                    assistant.imageUrl = dataUrl;
+                  }
+                } catch {
+                  /* preview not critical */
+                }
+
+                if (dataUrl) {
+                  conversation.push({
+                    role: "user",
+                    content: [
+                      {
+                        type: "text",
+                        text: "Here is the image. Please describe it in detail.",
+                      },
+                      {
+                        type: "image_url",
+                        image_url: { url: dataUrl },
+                      },
+                    ],
+                  });
+                }
+
+                conversation.push({
+                  role: "tool",
+                  content: dataUrl
+                    ? "Image loaded and shown to the model for direct vision."
+                    : "Failed to load image.",
+                  tool_call_id: tc.id,
+                });
+              } else {
+                const result = await dispatchTool(
+                  tc.function.name,
+                  args,
+                  rootDir!,
+                );
+                conversation.push({
+                  role: "tool",
+                  content: result,
+                  tool_call_id: tc.id,
+                });
+
+                // attach preview image URL from preview_image tool
+                if (tc.function.name === "preview_image") {
+                  const url = consumePreviewUrl();
+                  if (url) assistant.imageUrl = url;
+                }
+              }
+            }
+
+            set({ messages: [...conversation] });
+          } else {
+            if (assistant.content || assistant.reasoning) {
+              conversation.push({
+                role: "assistant",
+                content: assistant.content,
+                reasoning: assistant.reasoning,
+              });
+            }
+
+            set({ messages: [...conversation] });
+            innerExitedCleanly = true;
+            break;
+          }
+        }
+
+        // --- Goal evaluation after inner loop exits ---
+        if (innerExitedCleanly) {
+          let reached = true;
+
+          try {
+            const checkStream = await client.chat.completions.create({
+              model,
+              stream: false,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              messages: [
+                ...(conversation as any[]),
+                {
+                  role: "user",
+                  content:
+                    "Evaluate whether the user's original goal has been FULLY achieved. " +
+                    "Answer ONLY with JSON:\n" +
+                    '{"reached": true/false, "suggestion": "concrete next step if not done, empty string if done"}\n' +
+                    "Set reached=true ONLY if everything the user asked for is complete. " +
+                    "If the task is partially done or the model got distracted, set reached=false.",
+                },
+              ],
+            });
+
+            const evalText = checkStream.choices[0]?.message?.content || "";
+            try {
+              const json = JSON.parse(
+                evalText.slice(
+                  evalText.indexOf("{"),
+                  evalText.lastIndexOf("}") + 1,
+                ),
+              );
+              reached = Boolean(json.reached);
+            } catch {
+              reached = true; // parse failure — assume done
+            }
+          } catch {
+            reached = true; // API error — assume done
           }
 
-          set({ messages: [...conversation] });
-          break;
+          if (reached) break;
+
+          // Goal not achieved — nudge the model and restart the inner loop
+          conversation.push({
+            role: "user",
+            content:
+              "You haven't fully completed the original task yet. " +
+              "Please continue exploring and working until everything is done. " +
+              "Don't stop until the user's goal is fully achieved.",
+          });
+          set({
+            messages: [...conversation, { role: "assistant", content: "" }],
+          });
         }
       }
 
-      // safety — force break if max iterations reached
+      // Safety — force break if max control iterations reached
       if (
-        loopCount >= MAX_LOOPS &&
+        controlLoopCount >= MAX_CONTROL_LOOPS &&
         !conversation[conversation.length - 1]?.content
       ) {
         conversation.push({

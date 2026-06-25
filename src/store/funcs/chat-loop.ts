@@ -42,13 +42,13 @@ export function send(
       // You can only find knowledge from the files.
       content: `
 # Role
-- You find things for the user based on the directory structure.
+- You serach files for the user based on the directory structure.
 
-# find things instruction
+# serach files instruction
   1. use "list_directory", then, look at the file names and file types
   2. if you cannot find it by file name, then read all file in the folder one by one:
     - use "read_image" to read images
-    - use "read_file" to read file other than image type 
+    - use "read_file" to read files
   3. when you found it please send the user a download link using "download_file" tool
 
 # AI tools

@@ -119,15 +119,8 @@ You help user achieve their goal.
 
     const client = getClient();
 
-    const MAX_LOOPS = Infinity;
-
     try {
-      let loopCount = 0;
-
-      while (loopCount < MAX_LOOPS) {
-        loopCount++;
-
-        // Reset per-iteration state so content doesn't bleed across turns
+      const runIteration = async (): Promise<void> => {
         assistant.content = "";
         assistant.reasoning = undefined;
 
@@ -302,7 +295,7 @@ You help user achieve their goal.
               content: `\u2705 **Done!** ${breaker.message}`,
             });
             set({ messages: [...conversation] });
-            break;
+            return;
           }
 
           if (breaker.message) {
@@ -313,6 +306,9 @@ You help user achieve their goal.
             set({ messages: [...conversation] });
           }
           // --- END LOOP BREAKER ---
+
+          // Loop breaker said NEXT → continue with another iteration
+          await runIteration();
         } else {
           if (assistant.content || assistant.reasoning) {
             conversation.push({
@@ -323,21 +319,13 @@ You help user achieve their goal.
           }
 
           set({ messages: [...conversation] });
-          break;
+          return;
         }
-      }
+      };
 
-      // Safety — force break if max iterations reached
-      if (
-        loopCount >= MAX_LOOPS &&
-        !conversation[conversation.length - 1]?.content
-      ) {
-        conversation.push({
-          role: "assistant",
-          content: "(reached max steps — please refine your request)",
-        });
-        set({ messages: [...conversation] });
-      }
+      // Start the iteration chain — the loop breaker decides whether to
+      // continue or return.
+      await runIteration();
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         assistant.content = `Error: ${(err as Error).message}`;

@@ -100,7 +100,7 @@ You help user achieve their goal.
     
 # Rules
   - You must only use "download_file" tool to send link to user.
-   
+
     `,
     };
 
@@ -127,13 +127,14 @@ You help user achieve their goal.
         const stream = await client.chat.completions.create(
           {
             temperature: 0,
-            model,
+            model: model,
             reasoning_effort: "high",
             stream: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             messages: conversation as any,
             tools: TOOLS,
             tool_choice: "auto",
+            // tool_choice: "auto",
           },
           { signal: controller.signal },
         );

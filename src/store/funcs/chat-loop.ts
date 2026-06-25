@@ -235,6 +235,7 @@ You help user achieve their goal.
                   });
                   assistant.imageUrl = parsed.dataUrl;
                 }
+
                 toolContent =
                   typeof parsed.description === "string"
                     ? parsed.description
@@ -242,30 +243,6 @@ You help user achieve their goal.
               } catch {
                 // not JSON — use raw result as-is
               }
-            }
-
-            // // download_file returns a file path — resolve it to a blob URL
-            // // so the UI can render a download button
-            if (tc.function.name === "download_file") {
-              let blobUrl = "";
-              try {
-                const handle = await resolvePath(rootDir!, rawResult);
-                if (handle.kind === "file") {
-                  const file = await (handle as FileSystemFileHandle).getFile();
-                  blobUrl = URL.createObjectURL(file);
-                }
-              } catch {
-                // fall through — empty blobUrl won't render the download link
-              }
-              const dlMsg: Message = {
-                role: "tool",
-                content: toolContent,
-                tool_call_id: tc.id,
-
-                //
-                downloadUrl: blobUrl,
-                downloadName: String(args.path ?? "file"),
-              };
             }
 
             conversation.push({

@@ -9,6 +9,7 @@ import { FolderIcon, RefreshIcon } from "@/components/icons";
 import { ProviderSelector } from "@/components/provider-selector";
 import { useChat } from "@/store/useChat";
 import { useChatAction } from "@/store/useChatAction";
+import { ColumnBasedFileBrowser } from "@/components/column-based-file-browser";
 
 export default function Home() {
   const provider = useChat((s) => s.provider);
@@ -82,9 +83,7 @@ export default function Home() {
               onChange={(e) => setModel(e.target.value)}
               className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500"
             >
-              {models.length === 0 && (
-                <option value="">Loading models…</option>
-              )}
+              {models.length === 0 && <option value="">Loading models…</option>}
               {models.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.id}
@@ -96,6 +95,7 @@ export default function Home() {
         </div>
 
         <ChatRoom />
+        {/* <ColumnBasedFileBrowser /> */}
         <FileBrowser />
       </Gatekeeper>
     </div>

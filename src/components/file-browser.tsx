@@ -298,7 +298,7 @@ export function FileBrowser() {
   if (!rootDir) return null;
 
   return (
-    <div className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="border-t border-zinc-200 dark:border-zinc-800 ">
       {/* header */}
 
       <button
@@ -333,7 +333,7 @@ export function FileBrowser() {
       </button>
 
       {!collapsed && (
-        <div className="flex h-56">
+        <div className="flex h-[300px]">
           {/* tree */}
           <div className="w-64 shrink-0 overflow-y-auto border-r border-zinc-200 dark:border-zinc-800 py-1">
             {entries.map((e) => (

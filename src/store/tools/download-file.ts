@@ -1,3 +1,5 @@
+import { resolvePath } from "../fs";
+
 export const definition = {
   type: "function" as const,
   function: {
@@ -21,5 +23,16 @@ export async function handler(
   args: Record<string, unknown>,
   rootDir: FileSystemDirectoryHandle,
 ): Promise<string> {
-  return String(args.path ?? ".");
+  let blobUrl = "";
+  try {
+    const handle = await resolvePath(rootDir!, String(args.path ?? "."));
+    if (handle.kind === "file") {
+      const file = await (handle as FileSystemFileHandle).getFile();
+      blobUrl = URL.createObjectURL(file);
+    }
+  } catch {
+    // fall through — empty blobUrl won't render the download link
+  }
+
+  return blobUrl;
 }

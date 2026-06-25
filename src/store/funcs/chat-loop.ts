@@ -1,4 +1,5 @@
 import { TOOLS, dispatchTool } from "../tools";
+import { resolvePath } from "../fs";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 
@@ -96,7 +97,7 @@ You help user achieve their goal by using you skills.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             messages: conversation as any,
             tools: TOOLS,
-            tool_choice: "auto",
+            tool_choice: "required",
           },
           { signal: controller.signal },
         );
@@ -207,16 +208,23 @@ You help user achieve their goal by using you skills.
               }
             }
 
-            // download_file returns a blob URL — inject a download
-            // message so the UI renders a download button
-            if (
-              tc.function.name === "download_file" &&
-              rawResult.startsWith("blob:")
-            ) {
+            // download_file returns a file path — resolve it to a blob URL
+            // so the UI can render a download button
+            if (tc.function.name === "download_file") {
+              let blobUrl = "";
+              try {
+                const handle = await resolvePath(rootDir!, rawResult);
+                if (handle.kind === "file") {
+                  const file = await (handle as FileSystemFileHandle).getFile();
+                  blobUrl = URL.createObjectURL(file);
+                }
+              } catch {
+                // fall through — empty blobUrl won't render the download link
+              }
               const dlMsg: Message = {
                 role: "assistant",
-                content: `Here's the donwload button 🙏🏻`, // Download: ${String(args.path ?? "file")}
-                downloadUrl: rawResult,
+                content: `Here's the download button 🙏🏻`,
+                downloadUrl: blobUrl,
                 downloadName: String(args.path ?? "file"),
               };
               conversation.push(dlMsg);

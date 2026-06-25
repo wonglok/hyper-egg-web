@@ -5,7 +5,7 @@ export type { GateStatus };
 
 export const useChat = create<ChatStateValues>(() => ({
   messages: [],
-  input: "",
+  input: "find me a pizza image",
   loading: false,
   folderTree: null,
   gateStatus: "idle",

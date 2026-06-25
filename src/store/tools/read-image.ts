@@ -6,7 +6,7 @@ export const definition = {
   function: {
     name: "read_image",
     description:
-      "Read an image file and return a text description of what it shows. Use this to understand the contents of any image.",
+      "Read an image file and return a text description of what it shows and a dataURI of that image. Use this to understand the contents of any image.",
     parameters: {
       type: "object" as const,
       properties: {

@@ -43,22 +43,14 @@ export function send(
       // You can only find knowledge from the files.
       content: `
 # Role
-You help user achieve their goal by using you skills.
+You help user achieve their goal.
 
-# Tools
-- list_directory — browse folder contents
-- read_file — read a text file
-- write_file — create or overwrite a file
-- read_image — open an image and return a text description of its contents
-- download_file — generate a download link for a file
-- send_message — send a message to the user
-
-# Handling Search File / Find File
+# Instructions to find any thing:
   1. use "list_directory", then, look at the file names and file types
-  2. find it by file name / file type, if not, then loop through all files, one by one:
-    - use "read_image" to read image files
-    - use "read_file" to read files / docs / pdf / csv / etc...
-      `,
+  2. loop through all files, one by one:
+    - must use "read_image" to read image files
+    - must use "read_file" to read files / docs / pdf / csv / etc...
+    `,
     };
 
     const conversation: Message[] =
@@ -159,10 +151,9 @@ You help user achieve their goal by using you skills.
               /* use empty args */
             }
 
-            // For read_image and send_message, stream the response to the UI
+            // For read_image, stream the response to the UI
             const onChunk =
-              tc.function.name === "read_image" ||
-              tc.function.name === "send_message"
+              tc.function.name === "read_image"
                 ? (content: string, reasoning?: string) => {
                     const msg: Message = {
                       role: "assistant",
@@ -231,9 +222,6 @@ You help user achieve their goal by using you skills.
                 downloadUrl: blobUrl,
                 downloadName: String(args.path ?? "file"),
               };
-
-              conversation.push(dlMsg);
-              continue;
             }
 
             conversation.push({

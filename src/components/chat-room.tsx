@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Streamdown } from "streamdown";
-import "streamdown/styles.css";
+// import { Streamdown } from "streamdown";
+// import "streamdown/styles.css";
 import { useChat } from "@/store/useChat";
 import { useChatAction } from "@/store/useChatAction";
 import type { ContentBlock } from "@/types/chat";
@@ -131,12 +131,12 @@ export function ChatRoom() {
                   </details>
                 )}
                 {contentText(m.content) ? (
-                  <Streamdown
-                    mode={isStreaming ? "streaming" : "static"}
-                    className=" whitespace-pre-wrap"
+                  <div
+                    // mode={isStreaming ? "streaming" : "static"}
+                    className=" whitespace-pre-wrap text-sm"
                   >
                     {contentText(m.content)}
-                  </Streamdown>
+                  </div>
                 ) : isStreaming ? (
                   <span className="text-zinc-400 italic">Thinking…</span>
                 ) : null}

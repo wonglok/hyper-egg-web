@@ -139,6 +139,7 @@ function DirRow({
 
 function PathToolbar({ path }: { path: string }) {
   const { setInput } = useChatAction();
+  const input = useChat((r) => r.input);
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
@@ -177,7 +178,7 @@ function PathToolbar({ path }: { path: string }) {
       </button>
       <button
         type="button"
-        onClick={() => setInput(path)}
+        onClick={() => setInput(`${input} ${path}`)}
         className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
         title="Copy path to prompt"
       >

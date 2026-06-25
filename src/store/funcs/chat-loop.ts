@@ -55,8 +55,8 @@ You help user achieve their goal by using you skills.
   1. use "list_directory", then, look at the file names and file types
   2. if you cannot find it by file name / file type, then loop through all the files and all sub-folder items, one by one:
     - use "read_image" to read image files
-    - use "read_file" to read files / docs / pdf / csv
-  3. when you found it please send the user a download link using "download_file" tool
+    - use "read_file" to read files / docs / pdf / csv / etc...
+  3. when you found it, you must use "download_file" tool
 
       `,
     };
@@ -216,7 +216,7 @@ You help user achieve their goal by using you skills.
             ) {
               const dlMsg: Message = {
                 role: "assistant",
-                content: `Download: ${String(args.path ?? "file")}`,
+                content: `Here's the donwload button 🙏🏻`, // Download: ${String(args.path ?? "file")}
                 downloadUrl: rawResult,
                 downloadName: String(args.path ?? "file"),
               };

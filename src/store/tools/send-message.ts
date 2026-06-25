@@ -28,5 +28,5 @@ export async function handler(
   onChunk?.(message);
 
   // ${message}
-  return `Message is sent`;
+  return `${message}`;
 }

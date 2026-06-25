@@ -53,12 +53,11 @@ You help user achieve their goal by using you skills.
 - download_file — generate a download link for a file
 - send_message — send a message to the user
 
-# Search Files Skill
+# Search Skill
   1. use "list_directory", then, look at the file names and file types
-  2. if you cannot find it by file name / file type, then loop through all the files and all sub-folder items, one by one:
+  2. find it by file name / file type, if not, then loop through all files, one by one:
     - use "read_image" to read image files
     - use "read_file" to read files / docs / pdf / csv / etc...
-  3. when you found it, you must use "download_file" tool
       `,
     };
 

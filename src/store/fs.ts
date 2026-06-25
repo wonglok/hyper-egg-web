@@ -117,6 +117,92 @@ function isPDF(file: File): boolean {
   return file.name.endsWith(".pdf") || file.type === "application/pdf";
 }
 
+function isCSV(file: File): boolean {
+  return file.name.endsWith(".csv") || file.type === "text/csv";
+}
+
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let current: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        current.push(field);
+        field = "";
+      } else if (ch === "\n") {
+        current.push(field);
+        field = "";
+        if (current.some((f) => f !== "")) {
+          rows.push(current);
+        }
+        current = [];
+      } else if (ch === "\r") {
+        // skip — let \n handle it
+      } else {
+        field += ch;
+      }
+    }
+  }
+
+  // push last field and row
+  current.push(field.trimEnd());
+  if (current.some((f) => f !== "")) {
+    rows.push(current);
+  }
+
+  return rows;
+}
+
+function formatCSVasTable(rows: string[][]): string {
+  if (rows.length === 0) return "(empty CSV)";
+
+  const nCols = Math.max(...rows.map((r) => r.length));
+
+  // header row — first row is the header
+  const header = rows[0].map((c) => c.trim() || "(unnamed)");
+  const dataRows = rows.slice(1);
+
+  if (dataRows.length === 0) {
+    let h = `| ${header.join(" | ")} |\n`;
+    h += `| ${header.map(() => "---").join(" | ")} |\n`;
+    h += "\n*(header only, no data rows)*";
+    return h;
+  }
+
+  const lines: string[] = [];
+  lines.push(`| ${header.join(" | ")} |`);
+  lines.push(`| ${header.map(() => "---").join(" | ")} |`);
+
+  for (let i = 0; i < dataRows.length; i++) {
+    const cells = dataRows[i];
+    while (cells.length < nCols) cells.push("");
+    lines.push(`| ${cells.join(" | ")} |`);
+  }
+
+  lines.push("");
+  lines.push(`*${dataRows.length} rows x ${nCols} columns*`);
+
+  return lines.join("\n");
+}
+
 export async function readFileContent(
   handle: FileSystemFileHandle,
 ): Promise<string> {
@@ -143,6 +229,12 @@ export async function readFileContent(
     } catch (e) {
       return `Error parsing PDF: ${(e as Error).message}`;
     }
+  }
+
+  if (isCSV(file)) {
+    const text = await file.text();
+    const rows = parseCSV(text);
+    return formatCSVasTable(rows);
   }
 
   return await file.text();

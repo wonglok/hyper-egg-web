@@ -122,7 +122,7 @@ export function ChatRoom() {
                 )}
                 {m.reasoning && (
                   <details className="text-xs" open={isStreaming}>
-                    <summary className="cursor-pointer text-zinc-400 dark:text-zinc-500 font-medium select-none">
+                    <summary className="cursor-pointer text-zinc-400 dark:text-zinc-500 font-medium select-none whitespace-pre-wrap text-xs">
                       {isStreaming ? "💭 Thinking…" : "💭 Thought process"}
                     </summary>
                     <div className="mt-1.5 text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap border-l-2 border-zinc-300 dark:border-zinc-600 pl-2.5 italic">

@@ -69,7 +69,9 @@ export function ChatRoom() {
                         className="rounded-lg max-h-48 w-full object-contain bg-zinc-800 dark:bg-zinc-200"
                       />
                     ))}
-                  <div>{contentText(m.content)}</div>
+                  <div className="whitespace-pre-wrap">
+                    {contentText(m.content)}
+                  </div>
                 </div>
               </div>
             );
@@ -129,7 +131,10 @@ export function ChatRoom() {
                   </details>
                 )}
                 {contentText(m.content) ? (
-                  <Streamdown mode={isStreaming ? "streaming" : "static"}>
+                  <Streamdown
+                    mode={isStreaming ? "streaming" : "static"}
+                    className=" whitespace-pre-wrap"
+                  >
                     {contentText(m.content)}
                   </Streamdown>
                 ) : isStreaming ? (

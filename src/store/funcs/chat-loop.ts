@@ -225,8 +225,10 @@ You help user achieve their goal by using you skills.
               }
               const dlMsg: Message = {
                 role: "tool",
-                content: `${toolContent}`,
+                content: toolContent,
                 tool_call_id: tc.id,
+
+                //
                 downloadUrl: blobUrl,
                 downloadName: String(args.path ?? "file"),
               };

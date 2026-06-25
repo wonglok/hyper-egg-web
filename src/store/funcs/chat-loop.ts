@@ -1,5 +1,5 @@
 import { TOOLS, dispatchTool } from "../tools";
-import { resolvePath } from "../fs";
+// import { resolvePath } from "../fs";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 import OpenAI from "openai";
@@ -217,6 +217,21 @@ You help user achieve their goal.
             );
 
             let toolContent = rawResult;
+
+            // download_file returns { dataUrl, description } — inject the
+            // image for display and use only the description as the tool result
+            if (tc.function.name === "download_file") {
+              try {
+                conversation.push({
+                  role: "assistant",
+                  content: "Download link:",
+                  //
+                  downloadUrl: toolContent,
+                });
+              } catch {
+                // not JSON — use raw result as-is
+              }
+            }
 
             // read_image returns { dataUrl, description } — inject the
             // image for display and use only the description as the tool result

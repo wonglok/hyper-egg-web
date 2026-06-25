@@ -6,7 +6,6 @@ import { useChatAction } from "@/store/useChatAction";
 import type { ContentBlock } from "@/types/chat";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
-import Markdown from "react-markdown";
 
 function contentText(content: string | ContentBlock[]): string {
   if (typeof content === "string") return content;
@@ -136,10 +135,15 @@ export function ChatRoom() {
                 {contentText(m.content) ? (
                   <div
                     // animated
-                    // mode={isStreaming ? "streaming" : "static"}
+                    //
                     className="whitespace-pre-wrap "
                   >
-                    <Markdown>{contentText(m.content)}</Markdown>
+                    <Streamdown
+                      mode={isStreaming ? "streaming" : "static"}
+                      linkSafety={{ enabled: false }}
+                    >
+                      {contentText(m.content)}
+                    </Streamdown>
                   </div>
                 ) : isStreaming ? (
                   <span className="text-zinc-400 italic">Thinking…</span>

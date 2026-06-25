@@ -48,7 +48,7 @@ async function checkGoalCompletion(
 
 Respond with exactly ONE of these formats:
 - COMPLETE||<brief summary of what was achieved>
-- NEXT||<specific hint about the immediate next step>
+- NEXT||<instruction about the immediate next step>
 
 The user's goal is only COMPLETE if all the work they asked for has actually been finished and delivered to them. If there is still work remaining, answer with NEXT and a concrete suggestion.`,
     },
@@ -59,8 +59,8 @@ The user's goal is only COMPLETE if all the work they asked for has actually bee
     {
       model,
       messages: goalCheckMessages as any,
+      reasoning_effort: "high",
       temperature: 0,
-      max_tokens: 100,
     },
     { signal },
   );
@@ -126,7 +126,7 @@ You help user achieve their goal.
 
         const stream = await client.chat.completions.create(
           {
-            temperature: 1,
+            temperature: 0,
             model,
             reasoning_effort: "high",
             stream: true,
@@ -218,21 +218,6 @@ You help user achieve their goal.
 
             let toolContent = rawResult;
 
-            // download_file returns { dataUrl, description } — inject the
-            // image for display and use only the description as the tool result
-            if (tc.function.name === "download_file") {
-              try {
-                conversation.push({
-                  role: "assistant",
-                  content: "Download link:",
-                  //
-                  downloadUrl: toolContent,
-                });
-              } catch {
-                // not JSON — use raw result as-is
-              }
-            }
-
             // read_image returns { dataUrl, description } — inject the
             // image for display and use only the description as the tool result
             if (tc.function.name === "read_image") {
@@ -265,6 +250,22 @@ You help user achieve their goal.
               content: toolContent,
               tool_call_id: tc.id,
             });
+
+            // download_file returns { dataUrl, description } — inject the
+            // image for display and use only the description as the tool result
+            if (tc.function.name === "download_file") {
+              try {
+                conversation.push({
+                  role: "assistant",
+                  content: `Here's the download link`,
+                  //
+                  downloadName: String(args.path),
+                  downloadUrl: toolContent,
+                });
+              } catch {
+                // not JSON — use raw result as-is
+              }
+            }
           }
 
           set({ messages: [...conversation] });

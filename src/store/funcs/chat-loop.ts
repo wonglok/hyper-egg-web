@@ -51,14 +51,11 @@ You help user achieve their goal by using you skills.
 - read_image — open an image and return a text description of its contents
 - download_file — generate a download link for a file
 
-# Search Skill
-- You serach files for the user based on the directory structure by using "list_directory" tool
-
-## Instruction for seraching files 
+# Search Files Skill
   1. use "list_directory", then, look at the file names and file types
-  2. if you cannot find it by file name, then loop through all the files, one by one:
-    - use "read_image" to read images
-    - use "read_file" to read text / pdf files
+  2. if you cannot find it by file name / file type, then loop through all the files and all sub-folder items, one by one:
+    - use "read_image" to read image files
+    - use "read_file" to read files / docs / pdf / csv
   3. when you found it please send the user a download link using "download_file" tool
 
       `,
@@ -93,6 +90,7 @@ You help user achieve their goal by using you skills.
 
         const stream = await client.chat.completions.create(
           {
+            temperature: 0,
             model,
             reasoning_effort: "high",
             stream: true,

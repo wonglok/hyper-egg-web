@@ -57,7 +57,6 @@ You help user achieve their goal by using you skills.
     - use "read_image" to read image files
     - use "read_file" to read files / docs / pdf / csv / etc...
   3. when you found it, you must use "download_file" tool
-
       `,
     };
 
@@ -90,7 +89,7 @@ You help user achieve their goal by using you skills.
 
         const stream = await client.chat.completions.create(
           {
-            temperature: 0,
+            temperature: 1,
             model,
             reasoning_effort: "high",
             stream: true,
@@ -223,6 +222,7 @@ You help user achieve their goal by using you skills.
               conversation.push(dlMsg);
             }
 
+            console.log(toolContent);
             conversation.push({
               role: "tool",
               content: toolContent,

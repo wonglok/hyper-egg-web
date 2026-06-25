@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-// import { Streamdown } from "streamdown";
-// import "streamdown/styles.css";
 import { useChat } from "@/store/useChat";
 import { useChatAction } from "@/store/useChatAction";
 import type { ContentBlock } from "@/types/chat";
+import { Streamdown } from "streamdown";
+import "streamdown/styles.css";
 
 function contentText(content: string | ContentBlock[]): string {
   if (typeof content === "string") return content;
@@ -120,6 +120,7 @@ export function ChatRoom() {
                     ))}
                   </>
                 )}
+
                 {m.reasoning && (
                   <details className="text-xs" open={isStreaming}>
                     <summary className="cursor-pointer text-zinc-400 dark:text-zinc-500 font-medium select-none whitespace-pre-wrap text-xs">
@@ -130,13 +131,15 @@ export function ChatRoom() {
                     </div>
                   </details>
                 )}
+
                 {contentText(m.content) ? (
-                  <div
-                    // mode={isStreaming ? "streaming" : "static"}
-                    className=" whitespace-pre-wrap text-sm"
+                  <Streamdown
+                    animated
+                    mode={isStreaming ? "streaming" : "static"}
+                    className=" text-sm whitespace-pre-wrap"
                   >
                     {contentText(m.content)}
-                  </div>
+                  </Streamdown>
                 ) : isStreaming ? (
                   <span className="text-zinc-400 italic">Thinking…</span>
                 ) : null}

@@ -46,9 +46,9 @@ export function send(
 
 # Instruction
   1. use "list_directory", then, look at the file names and file types
-  2. if you cannot find it, then look at the file type
-    - if file type is image (.png, .webp, .jpg, .jpeg, .gif), then use "read_image"
-    - if file type is other type like pdf and text or etc, then use "read_file"
+  2. if you cannot find it by file name, then read all file in the folder one by one:
+    - use "read_image" to read images
+    - use "read_file" to read file other than image type 
 
 # Tools
 - list_directory — browse folder contents

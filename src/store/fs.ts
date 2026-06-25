@@ -75,9 +75,7 @@ export async function resolvePath(
           /* best-effort */
         }
         const hint =
-          available.length > 0
-            ? ` Available: ${available.join(", ")}`
-            : "";
+          available.length > 0 ? ` Available: ${available.join(", ")}` : "";
         throw new Error(
           `Cannot access "${part}": ${(e as Error).message}.${hint}`,
         );

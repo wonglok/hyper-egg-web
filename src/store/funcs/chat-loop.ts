@@ -44,11 +44,11 @@ export function send(
 # Role
 - You serach files for the user based on the directory structure.
 
-# serach files instruction
+# Serach files instruction
   1. use "list_directory", then, look at the file names and file types
-  2. if you cannot find it by file name, then read all file in the folder one by one:
+  2. if you cannot find it by file name, then loop through all the files, one by one:
     - use "read_image" to read images
-    - use "read_file" to read files
+    - use "read_file" to read text / pdf files
   3. when you found it please send the user a download link using "download_file" tool
 
 # AI tools

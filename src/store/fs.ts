@@ -91,7 +91,18 @@ export async function listDir(
 ): Promise<string> {
   const lines: string[] = [];
   for await (const [name, h] of handle) {
-    lines.push(h.kind === "directory" ? `📁 ${name}/` : `📄 ${name}`);
+    if (h.kind === "directory") {
+      lines.push(`📁 ${name}/`);
+    } else {
+      let mime = "";
+      try {
+        const file = await (h as FileSystemFileHandle).getFile();
+        if (file.type) mime = ` (${file.type})`;
+      } catch {
+        // best-effort — skip mime if we can't read the file
+      }
+      lines.push(`📄 ${name}${mime}`);
+    }
   }
   lines.sort((a, b) => {
     const aDir = a.startsWith("📁");

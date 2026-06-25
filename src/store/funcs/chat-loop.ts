@@ -51,6 +51,7 @@ You help user achieve their goal by using you skills.
 - write_file — create or overwrite a file
 - read_image — open an image and return a text description of its contents
 - download_file — generate a download link for a file
+- send_message — send a message to the user
 
 # Search Files Skill
   1. use "list_directory", then, look at the file names and file types
@@ -97,7 +98,7 @@ You help user achieve their goal by using you skills.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             messages: conversation as any,
             tools: TOOLS,
-            tool_choice: "required",
+            tool_choice: "auto",
           },
           { signal: controller.signal },
         );
@@ -159,9 +160,10 @@ You help user achieve their goal by using you skills.
               /* use empty args */
             }
 
-            // For read_image, stream the vision response to the UI
+            // For read_image and send_message, stream the response to the UI
             const onChunk =
-              tc.function.name === "read_image"
+              tc.function.name === "read_image" ||
+              tc.function.name === "send_message"
                 ? (content: string, reasoning?: string) => {
                     const msg: Message = {
                       role: "assistant",
@@ -208,8 +210,8 @@ You help user achieve their goal by using you skills.
               }
             }
 
-            // download_file returns a file path — resolve it to a blob URL
-            // so the UI can render a download button
+            // // download_file returns a file path — resolve it to a blob URL
+            // // so the UI can render a download button
             if (tc.function.name === "download_file") {
               let blobUrl = "";
               try {
@@ -222,15 +224,16 @@ You help user achieve their goal by using you skills.
                 // fall through — empty blobUrl won't render the download link
               }
               const dlMsg: Message = {
-                role: "assistant",
-                content: `Here's the download button 🙏🏻`,
+                role: "tool",
+                content: toolContent,
+                tool_call_id: tc.id,
                 downloadUrl: blobUrl,
                 downloadName: String(args.path ?? "file"),
               };
               conversation.push(dlMsg);
+              continue;
             }
 
-            console.log(toolContent);
             conversation.push({
               role: "tool",
               content: toolContent,

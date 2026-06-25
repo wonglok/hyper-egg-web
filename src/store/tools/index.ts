@@ -3,8 +3,9 @@ import * as readFile from "./read-file";
 import * as writeFile from "./write-file";
 import * as readImage from "./read-image";
 import * as downloadFile from "./download-file";
+import * as sendMessage from "./send-message";
 
-type OnChunk = (content: string, reasoning?: string) => void;
+export type OnChunk = (content: string, reasoning?: string) => void;
 
 type ToolDefinition = {
   type: "function";
@@ -35,6 +36,7 @@ const modules: Record<string, ToolModule> = {
   write_file: writeFile,
   read_image: readImage,
   download_file: downloadFile,
+  send_message: sendMessage,
 };
 
 export const TOOLS = Object.values(modules).map((m) => m.definition);

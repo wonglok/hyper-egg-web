@@ -2,6 +2,7 @@ import { TOOLS, dispatchTool } from "../tools";
 import { resolvePath } from "../fs";
 import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
+import OpenAI from "openai";
 
 type DeltaToolCall = {
   index: number;
@@ -28,6 +29,52 @@ function mergeToolCalls(
     acc.set(d.index, existing);
   }
 }
+/**
+ * Loop breaker — a lightweight non-streaming LLM call that inspects the
+ * conversation so far and decides whether the user's original goal has been
+ * fully achieved. Returns `{ done: true }` with a summary on completion,
+ * or `{ done: false }` with a hint about what to do next.
+ */
+async function checkGoalCompletion(
+  client: OpenAI,
+  conversation: Message[],
+  model: string,
+  signal: AbortSignal,
+): Promise<{ done: boolean; message: string }> {
+  const goalCheckMessages = [
+    {
+      role: "system" as const,
+      content: `You are a goal checker. Review the conversation so far and determine if the user's original goal has been **fully and completely achieved**.
+
+Respond with exactly ONE of these formats:
+- COMPLETE||<brief summary of what was achieved>
+- NEXT||<specific hint about the immediate next step>
+
+The user's goal is only COMPLETE if all the work they asked for has actually been finished and delivered to them. If there is still work remaining, answer with NEXT and a concrete suggestion.`,
+    },
+    ...conversation,
+  ];
+
+  const response = await client.chat.completions.create(
+    {
+      model,
+      messages: goalCheckMessages as any,
+      temperature: 0,
+      max_tokens: 100,
+    },
+    { signal },
+  );
+
+  const text = response.choices[0]?.message?.content?.trim() || "";
+
+  if (text.startsWith("COMPLETE")) {
+    const summary = text.replace(/^COMPLETE(\|\||:)?\s*/, "").trim();
+    return { done: true, message: summary || "All tasks completed." };
+  }
+
+  const hint = text.replace(/^NEXT(\|\||:)?\s*/, "").trim();
+  return { done: false, message: hint || text };
+}
 
 export function send(
   set: (s: Partial<ChatStateValues>) => void,
@@ -51,7 +98,8 @@ You help user achieve their goal.
     - must use "read_image" to read image files
     - must use "read_file" to read files / docs / pdf / csv / etc...
     
-  When you found the file must use: "download_file" to send link to user
+# Rules
+  - You must only use "download_file" tool to send link to user.
    
     `,
     };
@@ -235,6 +283,36 @@ You help user achieve their goal.
           }
 
           set({ messages: [...conversation] });
+
+          // --- LOOP BREAKER ---
+          // After every tool-call iteration, check if the user's goal has been
+          // fully achieved. If yes, break with a summary. If not, inject the
+          // hint as system guidance so the next loop iteration is steered
+          // toward the goal.
+          const breaker = await checkGoalCompletion(
+            client,
+            conversation,
+            model,
+            controller.signal,
+          );
+
+          if (breaker.done) {
+            conversation.push({
+              role: "assistant",
+              content: `\u2705 **Done!** ${breaker.message}`,
+            });
+            set({ messages: [...conversation] });
+            break;
+          }
+
+          if (breaker.message) {
+            conversation.push({
+              role: "system",
+              content: `[Next: ${breaker.message}]`,
+            });
+            set({ messages: [...conversation] });
+          }
+          // --- END LOOP BREAKER ---
         } else {
           if (assistant.content || assistant.reasoning) {
             conversation.push({

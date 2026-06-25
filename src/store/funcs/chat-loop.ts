@@ -43,7 +43,6 @@ export function send(
       content: `
 # Role
 - You find things for the user based on the directory structure.
-- You help answer user information.
 
 # find things instruction
   1. use "list_directory", then, look at the file names and file types

@@ -50,6 +50,9 @@ You help user achieve their goal.
   2. loop through all files, one by one:
     - must use "read_image" to read image files
     - must use "read_file" to read files / docs / pdf / csv / etc...
+    
+  When you found the file must use: "download_file" to send link to user
+   
     `,
     };
 

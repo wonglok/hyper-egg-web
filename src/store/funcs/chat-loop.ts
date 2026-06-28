@@ -36,13 +36,65 @@ function mergeToolCalls(
  * fully achieved. Returns `{ done: true }` with a summary on completion,
  * or `{ done: false }` with a hint about what to do next.
  */
+
+async function consolidateMemory(
+  client: OpenAI,
+  model: string,
+  existing: string,
+  entry: string,
+): Promise<string> {
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      {
+        role: "system",
+        content: `You are a memory consolidator. Merge the existing agent memory with the new entry into a single, clean, organized document.
+
+Rules:
+- Remove duplicates and redundant information
+- Organize by topic/theme using markdown headings
+- Keep concrete, actionable rules and patterns that would improve agent behavior
+- Remove outdated or contradicted information — newer entries take precedence
+- Output only the consolidated document — no JSON wrapper, no commentary
+- Keep total output under 50,000 tokens`,
+      },
+      {
+        role: "user",
+        content: `## Existing Memory\n\n${existing || "(empty)"}\n\n## New Entry\n\n${entry}\n\nConsolidate into a single document:`,
+      },
+    ],
+    temperature: 0,
+  });
+
+  return response.choices[0]?.message?.content?.trim() || entry;
+}
+
 async function checkGoalCompletion(
   client: OpenAI,
   conversation: Message[],
   model: string,
   signal: AbortSignal,
   trial = 0,
-): Promise<{ done: boolean; message: string }> {
+): Promise<{
+  done: boolean;
+  message: string;
+  systemImprovementMemory: string;
+}> {
+  let existingMemory = "";
+  try {
+    const handle = await rootDir!.getFileHandle("system_agent_memory.md");
+    const file = await handle.getFile();
+    existingMemory = await file.text();
+  } catch {
+    // file doesn't exist yet
+    existingMemory = "";
+  }
+
+  const SYSTEM_MEMORY: Message = {
+    role: "system",
+    content: existingMemory || "keep going",
+  };
+
   const goalCheckMessages = [
     {
       role: "system" as const,
@@ -52,8 +104,11 @@ Output a JSON object:
 - If the goal is COMPLETE: { "done": true, "message": "<brief summary of what was achieved>" }
 - If there is still work remaining: { "done": false, "message": "<instruction about the immediate next step>" }
 
+Always include a "systemImprovementMemory" field — a concrete rule or instruction that, if added to the system prompt, would make the agent more effective on future runs. Note any recurring failure patterns, missing tool capabilities, or instruction gaps you observed. Be specific and actionable.
+
 The user's goal is only COMPLETE if all the work they asked for has actually been finished and delivered to them.`,
     },
+    SYSTEM_MEMORY,
     ...conversation,
   ];
 
@@ -68,7 +123,8 @@ The user's goal is only COMPLETE if all the work they asked for has actually bee
           schema: toJSONSchema(
             z.object({
               done: z.boolean(),
-              messsage: z.string(),
+              message: z.string(),
+              systemImprovementMemory: z.string(),
             }),
             {},
           ),
@@ -84,17 +140,59 @@ The user's goal is only COMPLETE if all the work they asked for has actually bee
 
   try {
     const parsed = JSON.parse(text);
+    const done = Boolean(parsed.done);
+    const message = String(
+      parsed.message || (done ? "All tasks completed." : ""),
+    );
+
+    // consolidate memory — merge existing + new entry via LLM, then rewrite
+    if (rootDir) {
+      const entry = `## ${new Date().toISOString()} — ${done ? "COMPLETE" : "NEXT"}\n\n${message}\n\n### Improvement\n\n${parsed.systemImprovementMemory}`;
+      (async () => {
+        try {
+          const consolidated = await consolidateMemory(
+            client,
+            model,
+            existingMemory,
+            entry,
+          );
+          const fileHandle = await rootDir.getFileHandle(
+            "system_agent_memory.md",
+            { create: true },
+          );
+          const writable = await fileHandle.createWritable();
+          await writable.write(consolidated);
+          await writable.close();
+        } catch {
+          // best-effort — fall back to appending
+          try {
+            const fileHandle = await rootDir.getFileHandle(
+              "system_agent_memory.md",
+              { create: true },
+            );
+            const file = await fileHandle.getFile();
+            const fallback = await file.text();
+            const writable = await fileHandle.createWritable();
+            await writable.write((fallback || "") + "\n\n" + entry);
+            await writable.close();
+          } catch {
+            // give up
+          }
+        }
+      })();
+    }
+
     return {
-      done: Boolean(parsed.done),
-      message: String(
-        parsed.message || (parsed.done ? "All tasks completed." : ""),
-      ),
+      done,
+      message,
+      systemImprovementMemory: parsed.systemImprovementMemory,
     };
   } catch {
     if (trial >= 5) {
       return {
         done: Boolean(false),
         message: String("json error"),
+        systemImprovementMemory: String(""),
       };
     }
     trial++;
@@ -136,11 +234,31 @@ You help user achieve their goal.
     `,
     };
 
+    let systemMemoryContent = "";
+    try {
+      const handle = await rootDir!.getFileHandle("system_agent_memory.md");
+      const file = await handle.getFile();
+      systemMemoryContent = await file.text();
+    } catch {
+      // file doesn't exist yet — that's fine
+      systemMemoryContent = "keep going";
+    }
+
+    const SYSTEM_MEMORY: Message = {
+      role: "system",
+      content: systemMemoryContent,
+    };
+
     const conversation: Message[] =
       messages[0]?.role === "system" &&
       messages[0]?.content === SYSTEM_PROMPT.content
-        ? [...messages, { role: "user", content: text }]
-        : [SYSTEM_PROMPT, ...messages, { role: "user", content: text }];
+        ? [SYSTEM_MEMORY, ...messages, { role: "user", content: text }]
+        : [
+            SYSTEM_PROMPT,
+            SYSTEM_MEMORY,
+            ...messages,
+            { role: "user", content: text },
+          ];
     set({ messages: conversation, input: "", loading: true });
 
     const assistant: Message = { role: "assistant", content: "" };

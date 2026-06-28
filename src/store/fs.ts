@@ -97,7 +97,7 @@ export async function listDir(
       let mime = "";
       try {
         const file = await (h as FileSystemFileHandle).getFile();
-        if (file.type) mime = ` (${file.type})`;
+        if (file.type) mime = ` [${file.type}]`;
       } catch {
         // best-effort — skip mime if we can't read the file
       }

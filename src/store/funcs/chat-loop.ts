@@ -5,6 +5,13 @@ import { getClient, abort, rootDir, setAbort } from "./shared";
 import type { ChatStateValues, Message } from "@/types/chat";
 import OpenAI from "openai";
 
+const MEMORY_DIR = "agent_system_memory";
+const MEMORY_FILE = "system_agent_memory.md";
+
+async function getMemoryDir(): Promise<FileSystemDirectoryHandle> {
+  return rootDir!.getDirectoryHandle(MEMORY_DIR, { create: true });
+}
+
 type DeltaToolCall = {
   index: number;
   id?: string;
@@ -82,7 +89,7 @@ async function checkGoalCompletion(
 }> {
   let existingMemory = "";
   try {
-    const handle = await rootDir!.getFileHandle("system_agent_memory.md");
+    const handle = await (await getMemoryDir()).getFileHandle(MEMORY_FILE);
     const file = await handle.getFile();
     existingMemory = await file.text();
   } catch {
@@ -156,10 +163,9 @@ The user's goal is only COMPLETE if all the work they asked for has actually bee
             existingMemory,
             entry,
           );
-          const fileHandle = await rootDir.getFileHandle(
-            "system_agent_memory.md",
-            { create: true },
-          );
+          const fileHandle = await (
+            await getMemoryDir()
+          ).getFileHandle(MEMORY_FILE, { create: true });
           const writable = await fileHandle.createWritable();
           await writable.write(consolidated);
           await writable.close();
@@ -230,18 +236,17 @@ You help user achieve their goal.
     
 # Rules
   - You must only use "download_file" tool to send link to user.
-
     `,
     };
 
     let systemMemoryContent = "";
     try {
-      const handle = await rootDir!.getFileHandle("system_agent_memory.md");
+      const handle = await (await getMemoryDir()).getFileHandle(MEMORY_FILE);
       const file = await handle.getFile();
       systemMemoryContent = await file.text();
     } catch {
       // file doesn't exist yet — that's fine
-      systemMemoryContent = "keep going";
+      systemMemoryContent = ".";
     }
 
     const SYSTEM_MEMORY: Message = {

@@ -20,6 +20,7 @@ export const definition = {
   },
 };
 
+const MEMORY_DIR = "agent_system_memory";
 const CACHE_FILE = "system_image_cache.json";
 
 async function sha256(buffer: ArrayBuffer): Promise<string> {
@@ -29,13 +30,20 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
     .join("");
 }
 
+async function memoryDir(
+  rootDir: FileSystemDirectoryHandle,
+): Promise<FileSystemDirectoryHandle> {
+  return rootDir.getDirectoryHandle(MEMORY_DIR, { create: true });
+}
+
 type CacheStore = Record<string, { hash: string; description: string }>;
 
 async function readCache(
   rootDir: FileSystemDirectoryHandle,
 ): Promise<CacheStore> {
   try {
-    const handle = await rootDir.getFileHandle(CACHE_FILE);
+    const dir = await memoryDir(rootDir);
+    const handle = await dir.getFileHandle(CACHE_FILE);
     const file = await handle.getFile();
     return JSON.parse(await file.text());
   } catch {
@@ -52,9 +60,8 @@ async function writeCache(
   try {
     const store = await readCache(rootDir);
     store[name] = { hash, description };
-    const fileHandle = await rootDir.getFileHandle(CACHE_FILE, {
-      create: true,
-    });
+    const dir = await memoryDir(rootDir);
+    const fileHandle = await dir.getFileHandle(CACHE_FILE, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(store, null, 2));
     await writable.close();

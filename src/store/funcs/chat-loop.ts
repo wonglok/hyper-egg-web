@@ -44,7 +44,7 @@ async function checkGoalCompletion(
   const goalCheckMessages = [
     {
       role: "system" as const,
-      content: `You are a goal checker. Review the conversation so far and determine if the user's original goal has been **fully and completely achieved**.
+      content: `You are a goal checker. Review the conversation so far and determine if the user's original goal has been **ALL, fully and completely achieved**.
 
 Respond with exactly ONE of these formats:
 - COMPLETE||<brief summary of what was achieved>
@@ -258,7 +258,7 @@ You help user achieve their goal.
               try {
                 conversation.push({
                   role: "assistant",
-                  content: `Here's the download link`,
+                  content: `Download Link`,
                   //
                   downloadName: String(args.path),
                   downloadUrl: toolContent,

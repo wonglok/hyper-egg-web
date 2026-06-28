@@ -1,4 +1,4 @@
-import { listDir, resolvePath } from "../fs";
+import { listDir, resolvePath, DirEntry } from "../fs";
 
 export const definition = {
   type: "function" as const,
@@ -20,6 +20,17 @@ export const definition = {
   },
 };
 
+function formatEntries(entries: DirEntry[]): string {
+  if (entries.length === 0) return "(empty)";
+  return entries
+    .map((e) =>
+      e.kind === "directory"
+        ? `[Folder] ${e.name}/`
+        : `[File] ${e.name}${e.type ? ` [${e.type}]` : ""}`,
+    )
+    .join("\n");
+}
+
 export async function handler(
   args: Record<string, unknown>,
   rootDir: FileSystemDirectoryHandle,
@@ -27,5 +38,6 @@ export async function handler(
   const path = String(args.path ?? ".");
   const handle = await resolvePath(rootDir, path);
   if (handle.kind !== "directory") return "Error: not a directory.";
-  return await listDir(handle);
+  const entries = await listDir(handle);
+  return formatEntries(entries);
 }

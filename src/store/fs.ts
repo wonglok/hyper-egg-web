@@ -86,31 +86,33 @@ export async function resolvePath(
   return current;
 }
 
+export type DirEntry = {
+  name: string;
+  kind: "file" | "directory";
+  type?: string;
+};
+
 export async function listDir(
   handle: FileSystemDirectoryHandle,
-): Promise<string> {
-  const lines: string[] = [];
+): Promise<DirEntry[]> {
+  const entries: DirEntry[] = [];
   for await (const [name, h] of handle) {
-    if (h.kind === "directory") {
-      lines.push(`📁 ${name}/`);
-    } else {
-      let mime = "";
+    const entry: DirEntry = { name, kind: h.kind as "file" | "directory" };
+    if (h.kind === "file") {
       try {
         const file = await (h as FileSystemFileHandle).getFile();
-        if (file.type) mime = ` [${file.type}]`;
+        if (file.type) entry.type = file.type;
       } catch {
-        // best-effort — skip mime if we can't read the file
+        // best-effort
       }
-      lines.push(`📄 ${name}${mime}`);
     }
+    entries.push(entry);
   }
-  lines.sort((a, b) => {
-    const aDir = a.startsWith("📁");
-    const bDir = b.startsWith("📁");
-    if (aDir !== bDir) return aDir ? -1 : 1;
-    return a.localeCompare(b);
+  entries.sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === "directory" ? -1 : 1;
+    return a.name.localeCompare(b.name);
   });
-  return lines.join("\n") || "(empty)";
+  return entries;
 }
 
 function isPDF(file: File): boolean {

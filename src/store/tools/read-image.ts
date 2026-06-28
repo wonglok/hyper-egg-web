@@ -52,7 +52,9 @@ async function writeCache(
   try {
     const store = await readCache(rootDir);
     store[name] = { hash, description };
-    const fileHandle = await rootDir.getFileHandle(CACHE_FILE, { create: true });
+    const fileHandle = await rootDir.getFileHandle(CACHE_FILE, {
+      create: true,
+    });
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(store, null, 2));
     await writable.close();
@@ -151,7 +153,7 @@ export async function handler(
           content: [
             {
               type: "text",
-              text: "Describe this image in 1-2 sentences, like what you see, key objects, colors, text, layout, and any notable feature.",
+              text: "Describe this image in detail, like what you see, key objects, colors, text, layout, and any notable feature.",
             },
             {
               type: "image_url",

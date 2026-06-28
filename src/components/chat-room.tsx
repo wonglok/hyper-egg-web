@@ -124,7 +124,7 @@ export function ChatRoom() {
                   <div
                     // animated
                     //
-                    className="whitespace-pre-wrap "
+                    className=" "
                   >
                     <Streamdown
                       mode={isStreaming ? "streaming" : "static"}

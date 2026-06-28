@@ -1,3 +1,4 @@
+import z, { toJSONSchema } from "zod";
 import { TOOLS, dispatchTool } from "../tools";
 // import { resolvePath } from "../fs";
 import { getClient, abort, rootDir, setAbort } from "./shared";
@@ -40,17 +41,18 @@ async function checkGoalCompletion(
   conversation: Message[],
   model: string,
   signal: AbortSignal,
+  trial = 0,
 ): Promise<{ done: boolean; message: string }> {
   const goalCheckMessages = [
     {
       role: "system" as const,
-      content: `You are a goal checker. Review the conversation so far and determine if the user's original goal has been **ALL, fully and completely achieved**.
+      content: `You are a goal checker. Review the conversation so far and determine if the user's original goal has been **fully and completely achieved**.
 
-Respond with exactly ONE of these formats:
-- COMPLETE||<brief summary of what was achieved>
-- NEXT||<instruction about the immediate next step>
+Output a JSON object:
+- If the goal is COMPLETE: { "done": true, "message": "<brief summary of what was achieved>" }
+- If there is still work remaining: { "done": false, "message": "<instruction about the immediate next step>" }
 
-The user's goal is only COMPLETE if all the work they asked for has actually been finished and delivered to them. If there is still work remaining, answer with NEXT and a concrete suggestion.`,
+The user's goal is only COMPLETE if all the work they asked for has actually been finished and delivered to them.`,
     },
     ...conversation,
   ];
@@ -59,6 +61,19 @@ The user's goal is only COMPLETE if all the work they asked for has actually bee
     {
       model,
       messages: goalCheckMessages as any,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "goal_checker",
+          schema: toJSONSchema(
+            z.object({
+              done: z.boolean(),
+              messsage: z.string(),
+            }),
+            {},
+          ),
+        },
+      },
       reasoning_effort: "high",
       temperature: 0,
     },
@@ -67,13 +82,30 @@ The user's goal is only COMPLETE if all the work they asked for has actually bee
 
   const text = response.choices[0]?.message?.content?.trim() || "";
 
-  if (text.startsWith("COMPLETE")) {
-    const summary = text.replace(/^COMPLETE(\|\||:)?\s*/, "").trim();
-    return { done: true, message: summary || "All tasks completed." };
+  try {
+    const parsed = JSON.parse(text);
+    return {
+      done: Boolean(parsed.done),
+      message: String(
+        parsed.message || (parsed.done ? "All tasks completed." : ""),
+      ),
+    };
+  } catch {
+    if (trial >= 5) {
+      return {
+        done: Boolean(false),
+        message: String("json error"),
+      };
+    }
+    trial++;
+    return await checkGoalCompletion(
+      client,
+      conversation,
+      model,
+      signal,
+      trial,
+    );
   }
-
-  const hint = text.replace(/^NEXT(\|\||:)?\s*/, "").trim();
-  return { done: false, message: hint || text };
 }
 
 export function send(

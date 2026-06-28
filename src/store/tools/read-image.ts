@@ -20,6 +20,47 @@ export const definition = {
   },
 };
 
+const CACHE_FILE = "system_image_cache.json";
+
+async function sha256(buffer: ArrayBuffer): Promise<string> {
+  const hash = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+type CacheStore = Record<string, { hash: string; description: string }>;
+
+async function readCache(
+  rootDir: FileSystemDirectoryHandle,
+): Promise<CacheStore> {
+  try {
+    const handle = await rootDir.getFileHandle(CACHE_FILE);
+    const file = await handle.getFile();
+    return JSON.parse(await file.text());
+  } catch {
+    return {};
+  }
+}
+
+async function writeCache(
+  rootDir: FileSystemDirectoryHandle,
+  name: string,
+  hash: string,
+  description: string,
+): Promise<void> {
+  try {
+    const store = await readCache(rootDir);
+    store[name] = { hash, description };
+    const fileHandle = await rootDir.getFileHandle(CACHE_FILE, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(store, null, 2));
+    await writable.close();
+  } catch {
+    // best-effort
+  }
+}
+
 async function resizeToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -70,6 +111,10 @@ export async function handler(
     });
   }
 
+  // hash the original file bytes
+  const fileBytes = await file.arrayBuffer();
+  const fileHash = await sha256(fileBytes);
+
   let dataUrl: string;
   try {
     dataUrl = await resizeToDataUrl(file);
@@ -78,6 +123,13 @@ export async function handler(
       dataUrl: "",
       description: `Error reading image: ${(e as Error).message}`,
     });
+  }
+
+  // check cache — skip LLM if same file (name + hash) was already described
+  const cache = await readCache(rootDir);
+  const cached = cache[path];
+  if (cached && cached.hash === fileHash) {
+    return JSON.stringify({ dataUrl, description: cached.description });
   }
 
   if (!model)
@@ -129,10 +181,12 @@ export async function handler(
       }
     }
 
-    return JSON.stringify({
-      dataUrl,
-      description: description || "(no description)",
-    });
+    description = description || "(no description)";
+
+    // write cache entry
+    writeCache(rootDir, path, fileHash, description);
+
+    return JSON.stringify({ dataUrl, description });
   } catch (e) {
     return JSON.stringify({
       dataUrl,

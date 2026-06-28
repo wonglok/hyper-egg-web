@@ -7,7 +7,7 @@ export const useChat = create<ChatStateValues>(() => ({
   messages: [],
   input:
     process.env.NODE_ENV === "development"
-      ? "find me a strawberry image and send me a link"
+      ? "find me a strawberry image in my workspace and send me a link"
       : "",
   loading: false,
   folderTree: null,

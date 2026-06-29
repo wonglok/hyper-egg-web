@@ -223,17 +223,25 @@ export function send(
 
     const SYSTEM_PROMPT: Message = {
       role: "system",
-      // You can only find knowledge from the files.
       content: `
 # Role
 You help user achieve their goal.
 
 # Instructions to find any thing:
-  1. use "list_directory", then, look at the file names and file types
-  2. loop through all files, one by one:
+  1. Check if the folder has been ingested as a vector index — if so, use "search_index" first to find relevant files before scanning blindly
+  2. Use "list_directory" to see the folder structure
+  3. Loop through all files, one by one:
     - must use "read_image" to read image files
     - must use "read_file" to read files / docs / pdf / csv / etc...
-    
+
+# Semantic search
+  - If "_ai_memory_index.json" exists in the workspace, use "search_index" with the user's natural language query to find semantically relevant content before reading files manually
+  - "search_index" returns the most relevant chunks with their similarity scores, source files, and embedding IDs
+
+# Ingestion
+  - If the user asks to "ingest", "index", or "process" the folder's HTML/wiki content, use "ingest_html" to scan .html files, extract text from [data-embedding-id] elements, and build the vector index
+  - Ingestion is incremental — unchanged files are skipped automatically
+
 # Rules
   - You must only use "download_file" tool to send link to user.
     `,
@@ -254,13 +262,26 @@ You help user achieve their goal.
       content: systemMemoryContent,
     };
 
+    const SKILL_EMBED: Message = {
+      role: "system",
+      content: await import("../prompt/html-skill.md").then((r) => {
+        return r.default as any;
+      }),
+    };
+
     const conversation: Message[] =
       messages[0]?.role === "system" &&
       messages[0]?.content === SYSTEM_PROMPT.content
-        ? [SYSTEM_MEMORY, ...messages, { role: "user", content: text }]
+        ? [
+            SYSTEM_MEMORY,
+            SKILL_EMBED,
+            ...messages,
+            { role: "user", content: text },
+          ]
         : [
             SYSTEM_PROMPT,
             SYSTEM_MEMORY,
+            SKILL_EMBED,
             ...messages,
             { role: "user", content: text },
           ];

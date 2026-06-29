@@ -3,6 +3,8 @@ import * as readFile from "./read-file";
 import * as writeFile from "./write-file";
 import * as readImage from "./read-image";
 import * as downloadFile from "./download-file";
+import * as ingestHtml from "./ingest-html";
+import * as searchIndex from "./search-index";
 
 export type OnChunk = (content: string, reasoning?: string) => void;
 
@@ -35,6 +37,8 @@ const modules: Record<string, ToolModule> = {
   write_file: writeFile,
   read_image: readImage,
   download_file: downloadFile,
+  ingest_html: ingestHtml,
+  search_index: searchIndex,
 };
 
 export const TOOLS = Object.values(modules).map((m) => m.definition);

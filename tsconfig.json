@@ -23,6 +23,7 @@
     }
   },
   "include": [
+    "mdx.d.ts", // Make sure this is included
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",

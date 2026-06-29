@@ -17,4 +17,5 @@ export const useChat = create<ChatStateValues>(() => ({
   model: "",
   provider: "lmstudio",
   ollamaEndpoint: "",
+  indexStats: null,
 }));

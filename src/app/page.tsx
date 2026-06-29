@@ -10,6 +10,7 @@ import { ProviderSelector } from "@/components/provider-selector";
 import { useChat } from "@/store/useChat";
 import { useChatAction } from "@/store/useChatAction";
 import { ColumnBasedFileBrowser } from "@/components/column-based-file-browser";
+import { IndexStatus } from "@/components/index-status";
 
 export default function Home() {
   const provider = useChat((s) => s.provider);
@@ -92,6 +93,7 @@ export default function Home() {
             </select>
           )}
           <ProviderSelector />
+          <IndexStatus />
         </div>
 
         <ChatRoom />

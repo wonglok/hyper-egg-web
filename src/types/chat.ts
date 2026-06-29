@@ -25,6 +25,11 @@ export type GateStatus = "idle" | "verifying" | "ready" | "readonly" | "error";
 
 export type Provider = "lmstudio" | "ollama";
 
+export type IndexStats = {
+  entries: number;
+  updatedAt: string;
+};
+
 export type ChatStateValues = {
   messages: Message[];
   input: string;
@@ -36,6 +41,7 @@ export type ChatStateValues = {
   model: string;
   provider: Provider;
   ollamaEndpoint: string;
+  indexStats: IndexStats | null;
 };
 
 export type ChatActions = {

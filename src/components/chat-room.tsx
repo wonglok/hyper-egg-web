@@ -7,6 +7,7 @@ import type { ContentBlock } from "@/types/chat";
 import { LinkDisplay } from "@/components/link-display";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
+import { Toolbar } from "./toolbar";
 
 function contentText(content: string | ContentBlock[]): string {
   if (typeof content === "string") return content;
@@ -45,8 +46,10 @@ export function ChatRoom() {
   // console.log(messages);
 
   return (
-    <div className="flex flex-col min-h-0 flex-1">
-      <div className="flex-1 overflow-y-auto py-6 space-y-4">
+    <div className="flex flex-col h-full w-full flex-1">
+      <div className="">
+        <Toolbar></Toolbar>
+
         {messages.length === 0 && (
           <p className="text-zinc-500 dark:text-zinc-400 text-center mt-12">
             Ask a question about your folder.
@@ -172,7 +175,7 @@ export function ChatRoom() {
           e.preventDefault();
           send();
         }}
-        className="sticky bottom-0 bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-800 py-3 flex gap-2"
+        className="space-x-3 p-2 absolute bottom-0 left-0 w-full bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-800 py-3 flex gap-2"
       >
         <input
           type="text"

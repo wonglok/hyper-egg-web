@@ -298,7 +298,7 @@ export function FileBrowser() {
   if (!rootDir) return null;
 
   return (
-    <div className="border-t border-zinc-200 dark:border-zinc-800 ">
+    <div className="border-y border-zinc-200 dark:border-zinc-800 ">
       {/* header */}
 
       <button

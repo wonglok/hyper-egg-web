@@ -20,7 +20,9 @@ function isPdf(name: string) {
 }
 
 function isHtml(name: string) {
-  return name.toLowerCase().endsWith(".html") || name.toLowerCase().endsWith(".htm");
+  return (
+    name.toLowerCase().endsWith(".html") || name.toLowerCase().endsWith(".htm")
+  );
 }
 
 async function readDir(dir: FileSystemDirectoryHandle): Promise<Entry[]> {
@@ -202,10 +204,14 @@ function ColumnView({
               <FileIcon className="size-3.5 shrink-0" />
               <span className="truncate">{entry.name}</span>
               {isImage(entry.name) && (
-                <span className="text-[10px] text-zinc-400 ml-auto shrink-0">img</span>
+                <span className="text-[10px] text-zinc-400 ml-auto shrink-0">
+                  img
+                </span>
               )}
               {isHtml(entry.name) && (
-                <span className="text-[10px] text-zinc-400 ml-auto shrink-0">html</span>
+                <span className="text-[10px] text-zinc-400 ml-auto shrink-0">
+                  html
+                </span>
               )}
             </button>
           );
@@ -385,10 +391,7 @@ export function ColumnBasedFileBrowser() {
       {!collapsed && (
         <div className="flex h-64">
           {/* Columns */}
-          <div
-            ref={scrollRef}
-            className="flex flex-1 min-w-0 overflow-x-auto"
-          >
+          <div ref={scrollRef} className="flex flex-1 min-w-0 overflow-x-auto">
             {columns.length === 0 && (
               <p className="text-xs text-zinc-400 dark:text-zinc-500 p-4">
                 Loading…

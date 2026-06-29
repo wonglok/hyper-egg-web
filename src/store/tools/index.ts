@@ -5,6 +5,7 @@ import * as readImage from "./read-image";
 import * as downloadFile from "./download-file";
 import * as ingestHtml from "./ingest-html";
 import * as searchIndex from "./search-index";
+import * as generateHtmlWiki from "./generate-html-wiki";
 
 export type OnChunk = (content: string, reasoning?: string) => void;
 
@@ -39,6 +40,7 @@ const modules: Record<string, ToolModule> = {
   download_file: downloadFile,
   ingest_html: ingestHtml,
   search_index: searchIndex,
+  generate_html_wiki: generateHtmlWiki,
 };
 
 export const TOOLS = Object.values(modules).map((m) => m.definition);

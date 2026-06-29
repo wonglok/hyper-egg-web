@@ -372,18 +372,19 @@ You help user achieve their goal.
               /* use empty args */
             }
 
-            // For read_image, stream the response to the UI
-            const onChunk =
-              tc.function.name === "read_image"
-                ? (content: string, reasoning?: string) => {
-                    const msg: Message = {
-                      role: "assistant",
-                      content: content,
-                      reasoning: reasoning,
-                    };
-                    set({ messages: [...conversation, msg] });
-                  }
-                : undefined;
+            // For read_image and generate_html_wiki, stream the response to the UI
+            const streamToUi =
+              tc.function.name === "read_image" ||
+              tc.function.name === "generate_html_wiki";
+            const onChunk = streamToUi
+              ? (content: string) => {
+                  const msg: Message = {
+                    role: "assistant",
+                    content: content,
+                  };
+                  set({ messages: [...conversation, msg] });
+                }
+              : undefined;
 
             const rawResult = await dispatchTool(
               tc.function.name,

@@ -51,9 +51,11 @@ export function ChatRoom() {
       <div className="">
         <div className="fixed top-0 left-0 w-full bg-white">
           <Toolbar></Toolbar>
-          <FileBrowser></FileBrowser>
         </div>
-        <div className="h-[150px]"></div>
+        <div className="h-[50px]"></div>
+        <FileBrowser></FileBrowser>
+        <div className="h-[100px]"></div>
+
         <div className="w-full max-w-2xl mx-auto space-y-3">
           {messages.length === 0 && (
             <p className="text-zinc-500 dark:text-zinc-400 text-center mt-12">

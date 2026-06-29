@@ -333,7 +333,7 @@ export function FileBrowser() {
       </button>
 
       {!collapsed && (
-        <div className="flex h-[300px]">
+        <div className="flex h-[70vh]">
           {/* tree */}
           <div className="w-64 shrink-0 overflow-y-auto border-r border-zinc-200 dark:border-zinc-800 py-1">
             {entries.map((e) => (

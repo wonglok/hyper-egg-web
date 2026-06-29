@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
+  devIndicators: false,
 };
 
 // module.exports = nextConfig;
